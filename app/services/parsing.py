@@ -102,7 +102,7 @@ if __name__ == "__main__":
     """
 
     try: 
-        result = extract_markers_from_code(c_code,"c")
+        result = extract_markers_from_code(c_code_with_error,"c")
 
         print("Template of the code wothout the markers\n", result.template)
 
@@ -112,5 +112,5 @@ if __name__ == "__main__":
                     print(f"Content: {m.content}") 
 
 
-    except Exception as e:
+    except ValueError as e:
         print(e)

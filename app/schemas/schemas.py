@@ -29,12 +29,12 @@ class HintCreate(BaseModel):
 
 class ExerciseFullCreate(BaseModel):
     #  General informations 
+    course_id: int
     name: str
     description: str
-    language: Language
+    visibility: str
+    language: str
     difficulty: int = Field(..., ge=1, le=5) # Automatic validation between [1,5]
-    visibility: Visibility = Visibility.PRIVATE
-    course_id: int
     position: int
 
     # The files 
