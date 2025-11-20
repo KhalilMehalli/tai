@@ -24,7 +24,10 @@ async def create_exercise_beta(exercise_data: ExerciseFullCreate):
             # Call our "extract_markers_from_code" which will separate the content of the markers from the file
            parsed_result = extract_markers_from_code(file.content, file.extension) 
         except ValueError as e:
-            return {"error": str(e)}
+            return {
+                "status": False, 
+                "message": str(e)
+            }
 
 
         # Creation of our exercice
@@ -51,7 +54,7 @@ async def create_exercise_beta(exercise_data: ExerciseFullCreate):
     print("DB_Files", DB_FILES)
     print("DB_Markers", DB_MARKERS)
     return {
-        "status": "success", 
+        "status": True, 
         "message": f"Exercise {exercise_data.name} created successfully"
     }
 
