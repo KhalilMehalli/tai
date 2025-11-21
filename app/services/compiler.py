@@ -13,6 +13,8 @@ COMPILER_CONFIG = {
 
 def name_extension(file : FileCreate):
     """Function to ensure to combine the filename with his extension."""
+    if file.name.endswith(f".{file.extension}"): # Security for now because I am not sure if name will contains the extension or not 
+        return file.name
     return f"{file.name}.{file.extension}"
 
 def write_files_to_folder(files: List[FileCreate], folder_path : str):
@@ -126,42 +128,46 @@ def run_execution(config: dict, tmp_dir: str, argv: str):
         }
 
 
+def prepare_and_compile(files: List[FileCreate], language: Language, tmp_dir: str):
+    """ Writes files and compiles them in the tmp_dir """
+    # Write files in tmp_dir 
+    try:
+        write_files_to_folder(files, tmp_dir)
+    except Exception as e:
+        return {"status": False, "message": str(e)}, {}
+
+    # Get the right config to compile depending on the language 
+    config = COMPILER_CONFIG.get(language)
+
+    # Compilation
+    compile_result = run_compilation(config, files, tmp_dir)
+    
+    return compile_result, config
+
+
+async def compile_logic(files: List[FileCreate], language: Language):
+    """ ONLY COMPILATION (For checking syntax errors in the teacher code). """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+
+        compile_result, _ = prepare_and_compile(files, language, tmp_dir)
+        return compile_result
+
+
 async def compile_and_run_logic(files: List[FileCreate], language: Language, argv: str):
-    """
-    Main Pipeline:
-    1. Create temporary directory.
-    2. Write source files.
-    3. Compile code.
-    4. Execution .
-    """
+    """COMPILATION + EXECUTION (For running tests)."""
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        
-        # Write the files in this temporary folder
-        try :
-            write_files_to_folder(files, tmp_dir)
-        except Exception as e:
-            return {"status": False, "message": str(e)}
-        
-        # Get the right compiler depending of the language
-        config = COMPILER_CONFIG.get(language)
-        
-        
-        # Compilation
-        compile_result = run_compilation(config, files, tmp_dir)
+        # 1. On prépare et on compile
+        compile_result, config = prepare_and_compile(files, language, tmp_dir)
 
+        # Early return if compilation fails
         if not compile_result["status"]:
-            # Early return if compilation fails
             return compile_result
 
-        print("compilation result: ", compile_result)
-
-        # Execution  
+        # Execution 
         exec_result = run_execution(config, tmp_dir, argv)
-        print("result runner :", exec_result)
-
-
-
-        return exec_result
         
-    
+        return exec_result
+
+
+       

@@ -49,6 +49,27 @@ async def create_exercise_beta(exercise_data: ExerciseFullCreate):
                 "marker_id": marker.id,
                 "solution_content": marker.content
             }
+    
+    # Test treatment 
+    for test in exercise_data.tests:
+        test_id = len(DB_TEST)
+        DB_TEST[test_id] = {
+            "exercise_id": id_ex,
+            "argv": test.argv,
+            "expected_output": test.expected_output,
+            "comment": test.comment,
+            "position": test.position
+        }
+
+    # Hint treatment 
+    for hint in exercise_data.hints:
+        hint_id = len(DB_HINT)
+        DB_HINT[hint_id] = {
+            "exercise_id": id_ex,
+            "body": hint.body,
+            "unlock_after_attempts": hint.unlock_after_attempts,
+            "position": hint.position
+        }
 
     print("DB_Exercices", DB_EXERCISES)
     print("DB_Files", DB_FILES)

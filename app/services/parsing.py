@@ -20,7 +20,7 @@ COMMENT_SYMBOLS = {
 }
 
 
-def extract_markers_from_code(full_content: str, extension : str) -> ParsedResult:
+def extract_markers_from_code(full_content: str, extension : str):
     """
     Parses the raw code to separate the template from the markers and his content.
     """
