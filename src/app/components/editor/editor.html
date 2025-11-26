@@ -1,0 +1,86 @@
+<div class="h-full min-h-0 overflow-hidden rounded-xl">
+  <!--tab + compilation button-->  
+  <div class="flex justify-between bg-gray-800">
+    <!--tab file + button +-->
+    <div class="flex items-center px-2 pt-2 gap-1 overflow-x-auto">
+        @for (file of files; track file.id) {
+        <div
+            class="flex items-center gap-1 px-3 py-1 rounded-t-xl cursor-pointer border-b-2"
+            [class.bg-gray-600]="file.id === activeFileId"
+            [class.text-white]="file.id === activeFileId"
+            [class.bg-gray-700]="file.id !== activeFileId"
+            [class.text-gray-200]="file.id !== activeFileId"
+            (click)="setActiveFile(file)"
+        >
+            <input #nameInput  class="bg-transparent text-sm font-semibold outline-none w-32
+                    border-b border-transparent"
+            [value]="file.extension ? file.name + '.' + file.extension : file.name"
+            [readonly] = "!isTeacher"
+            (blur)="onNameChange(file, nameInput.value)"
+            (keydown.enter)="$event.preventDefault(); nameInput.blur()"
+            />
+
+            <button type="button"
+            class="text-xs text-white hover:text-red-500"
+            (click)="deleteFile(file); $event.stopPropagation()"
+            [hidden]="!isTeacher">
+            X
+            </button>
+        </div>
+        }
+
+        <button
+        type="button"
+        class="px-3 py-1 text-sm font-mono rounded-t-xl bg-gray-700 text-white hover:bg-gray-600 border-b-2"
+        (click)="addFile()" [hidden]="!isTeacher">
+        + 
+        </button>
+    </div>
+
+    <div class="flex items-center px-2 pt-2">
+      <button
+        type="button"
+        class="px-3 py-1 text-sm font-mono rounded-t-xl bg-gray-700 text-white hover:bg-gray-600 border-b-2"
+        (click)="onCompile()" [hidden]="!isTeacher">
+        Compilation
+      </button>
+    </div>
+  </div>
+
+  @if (activeFile) {
+    <div class="flex-1 relative">
+      <textarea #contentInput
+        class="w-full h-full bg-gray-900 text-gray-100 font-mono p-3 rounded-b-xl text-sm 
+               resize-none  outline-none overflow-auto"
+        [value]="activeFile.content"
+        (input)="onContentChange(contentInput.value)"
+        [readonly]="!isTeacher && !activeFile.editable"
+        placeholder="Écris ton code ici..."
+      ></textarea>
+
+        <!--Checkbox main-->
+        <div class="absolute bottom-2 right-4 flex items-center gap-4 text-xs ">
+        <label class="flex items-center gap-1 text-xs text-gray-200">
+          <input #mainCheckbox type="checkbox"
+            [checked]="activeFile.is_main"
+            (change)="onMainChange(activeFile, mainCheckbox.checked)"
+            [disabled]="!isTeacher"
+          />
+          Main
+        </label>
+
+        <!--Checkbox editable-->
+
+        <label class="flex items-center gap-1 text-xs text-gray-200">
+          <input #editableCheckbox
+            type="checkbox"
+            [checked]="activeFile.editable"
+            (change)="onEditableChange(activeFile, editableCheckbox.checked)"
+            [disabled]="!isTeacher"
+          />
+          Éditable
+        </label>
+        </div>
+    </div>
+  } 
+</div>

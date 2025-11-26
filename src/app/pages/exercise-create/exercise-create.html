@@ -1,0 +1,105 @@
+<div class="flex h-full w-full p-6 gap-6 bg-gray-800">
+
+    <!-- Left panel  -->
+    <div class="w-2/3 h-full bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
+
+        <div class="flex-none">
+          <input type="text"  placeholder="Titre"
+            class="w-full p-2 border border-gray-300 rounded-xl text-sm 
+                  text-gray-500 outline-none focus:border-gray-800"
+            [(ngModel)]="title">
+        </div>
+
+
+        <div class="flex-none min-h-0">
+          <textarea id="description" placeholder="Description" class="w-full  border border-gray-300 rounded-xl p-3 
+                  text-gray-500 resize-none outline-none focus:border-gray-800"
+            [(ngModel)]="description"></textarea>
+        </div>
+
+        <!--Input(language, isTeacher) and output-->
+        <app-editor 
+            [language]="language"
+            [isTeacher]="true"
+            (filesChange)="onFilesChange($event)"
+            (compile)="onCompileRequest()"
+            (consoleMessage)="onConsoleMessage($event)"
+        ></app-editor>
+
+        <app-console
+        [text]="consoleText"
+        ></app-console>
+
+    </div>
+
+    <!-- Right panel  -->
+    <div class="w-1/3 bg-white rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">
+
+        <!-- SECTION CONFIGURATION -->
+        <div class="flex flex-col gap-3 mb-2">
+            <div class="flex flex-row items-center gap-3">
+                <label class="text-sm font-bold text-gray-800">Langage</label>
+                <select
+                class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
+                [(ngModel)]="language"
+                >
+                <option value="c">C</option>
+                </select>
+            </div>
+
+            <div class="flex flex-row items-center gap-2">
+                <label class="text-sm font-bold text-gray-800">Visibilité</label>
+                <select
+                class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
+                [(ngModel)]="visibility"
+                >
+                <option value="public">Public</option>
+                <option value="private">Privé</option>
+                </select>
+            </div>
+
+            <div class="flex flex-row items-center gap-2">
+                <label class="text-sm font-bold text-gray-800">Difficulté</label>
+                <select
+                class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
+                [(ngModel)]="difficulty"
+                >
+                <option [ngValue]="1">1</option>
+                <option [ngValue]="3">3</option>
+                <option [ngValue]="5">5</option>
+                </select>
+            </div>
+        </div>
+
+      
+        <hr class="border-t-2 border-gray-800 my-2">
+
+        
+        <app-tests
+            (testsChange)="onTestsChange($event)"
+            (runTest)="onRunTest($event)"
+            (consoleMessage)="onConsoleMessage($event)">
+        </app-tests>
+
+        <hr class="border-t-2 border-gray-800 my-2">
+
+        <app-hints 
+        (hintsChange)="onHintsChange($event)">
+        </app-hints>
+
+        <hr class="border-t-2 border-gray-800 my-2">
+
+        <div class="flex gap-2">
+          <button 
+           class="w-full py-3 bg-gray-800 text-white font-bold rounded-xl  hover:bg-gray-700 "
+           (click)="onCreateExercise()">
+              CRÉER
+          </button>
+        </div>
+
+    </div>
+
+
+
+
+</div>
