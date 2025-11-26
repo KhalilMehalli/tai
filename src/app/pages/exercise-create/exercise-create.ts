@@ -92,7 +92,10 @@ onRunTest(test: TestCaseCreate): void {
       next: res => {
         this.onConsoleMessage(JSON.stringify(res, null, 2));
         // update the expected_output
-        test.expected_output = res.stdout?.trim() ?? test.expected_output;
+        if(res.status)
+          test.expected_output = res.stdout?.trim() ?? test.expected_output;
+        else
+          test.expected_output = "error";
       },
       error: err => {
         this.onConsoleMessage(`Erreur réseau : ${err.message ?? err}`);

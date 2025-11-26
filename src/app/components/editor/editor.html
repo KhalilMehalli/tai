@@ -1,18 +1,18 @@
-<div class="h-full min-h-0 overflow-hidden rounded-xl">
+<div class="flex flex-col h-full min-h-0 overflow-hidden rounded-xl">
   <!--tab + compilation button-->  
   <div class="flex justify-between bg-gray-800">
     <!--tab file + button +-->
     <div class="flex items-center px-2 pt-2 gap-1 overflow-x-auto">
         @for (file of files; track file.id) {
         <div
-            class="flex items-center gap-1 px-3 py-1 rounded-t-xl cursor-pointer border-b-2"
+            class="flex items-center gap-0.5 px-2 py-1 rounded-t-xl cursor-pointer border-b-2"
             [class.bg-gray-600]="file.id === activeFileId"
             [class.text-white]="file.id === activeFileId"
             [class.bg-gray-700]="file.id !== activeFileId"
             [class.text-gray-200]="file.id !== activeFileId"
             (click)="setActiveFile(file)"
         >
-            <input #nameInput  class="bg-transparent text-sm font-semibold outline-none w-32
+            <input #nameInput  class=" w-min max-w-20 bg-transparent text-sm font-semibold outline-none 
                     border-b border-transparent"
             [value]="file.extension ? file.name + '.' + file.extension : file.name"
             [readonly] = "!isTeacher"
@@ -48,9 +48,9 @@
   </div>
 
   @if (activeFile) {
-    <div class="flex-1 relative">
+    <div class="flex-1 min-h-0 relative overflow-hidden">
       <textarea #contentInput
-        class="w-full h-full bg-gray-900 text-gray-100 font-mono p-3 rounded-b-xl text-sm 
+        class="w-full h-full bg-gray-900 text-gray-100 font-mono p-3 rounded-b-xl text-xs 
                resize-none  outline-none overflow-auto"
         [value]="activeFile.content"
         (input)="onContentChange(contentInput.value)"

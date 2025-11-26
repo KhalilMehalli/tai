@@ -11,26 +11,30 @@
         </div>
 
 
-        <div class="flex-none min-h-0">
-          <textarea id="description" placeholder="Description" class="w-full  border border-gray-300 rounded-xl p-3 
+        <div class="flex-1 min-h-0">
+          <textarea id="description" placeholder="Description" class="w-full h-full border border-gray-300 rounded-xl p-3 
                   text-gray-500 resize-none outline-none focus:border-gray-800"
             [(ngModel)]="description"></textarea>
         </div>
 
-        <!--Input(language, isTeacher) and output-->
-        <app-editor 
-            [language]="language"
-            [isTeacher]="true"
-            (filesChange)="onFilesChange($event)"
-            (compile)="onCompileRequest()"
-            (consoleMessage)="onConsoleMessage($event)"
-        ></app-editor>
+        <div class="flex-[3_1] min-h-0 overflow-hidden" >
+            <!--Input(language, isTeacher) and output-->
+            <app-editor 
+                [language]="language"
+                [isTeacher]="true"
+                (filesChange)="onFilesChange($event)"
+                (compile)="onCompileRequest()"
+                (consoleMessage)="onConsoleMessage($event)"
+            ></app-editor>
+        </div>
 
-        <app-console
-        [text]="consoleText"
-        ></app-console>
+        <div class="flex-[2_1] min-h-0 overflow-hidden" >        
+            <app-console
+                [text]="consoleText"
+            ></app-console>
+        </div>
 
-    </div>
+        </div>
 
     <!-- Right panel  -->
     <div class="w-1/3 bg-white rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">

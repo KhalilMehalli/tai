@@ -44,7 +44,7 @@ export class Tests {
   // When we click on the "Valider" or "Supprimer" button
   onValidateOrDelete(test: TestRow): void {
     if (!test.validated) {
-      if (test.argv.trim() === '') {
+      if (test.expected_output.trim() === 'error') {
         return;
       }
       test.validated = true;
