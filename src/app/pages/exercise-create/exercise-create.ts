@@ -74,7 +74,7 @@ export class ExerciseCreate {
           this.onConsoleMessage( JSON.stringify(res, null, 2));
         },
         error: (err) => {
-          this.onConsoleMessage(`Erreur réseau : ${err.message ?? err}`);
+          this.onConsoleMessage(`Erreur : ${err.message ?? err}`);
         },
       });
     }  
@@ -98,7 +98,7 @@ onRunTest(test: TestCaseCreate): void {
           test.expected_output = "error";
       },
       error: err => {
-        this.onConsoleMessage(`Erreur réseau : ${err.message ?? err}`);
+        this.onConsoleMessage(`Erreur : ${err.message ?? err}`);
       },
     });
   }
@@ -118,7 +118,7 @@ onRunTest(test: TestCaseCreate): void {
       return;
     }
 
-    // 3) construction du payload complet
+    // Payload construct
     const payload: ExerciseCreatePayload = {
       course_id: this.course_id,
       name: this.title.trim(),
@@ -126,13 +126,13 @@ onRunTest(test: TestCaseCreate): void {
       visibility: this.visibility,
       language: this.language,
       difficulty: this.difficulty,
-      position: this.position,  // à adapter à ta logique
+      position: this.position,  
       files: this.files,
       tests: this.tests,
       hints: this.hints,
     };
 
-    // 4) appel au backend
+    // Send to the back
     this.onConsoleMessage('Envoi de l’exercice au serveur...');
 
     this.exerciceTeacherService.createExercise(payload).subscribe({
@@ -140,11 +140,10 @@ onRunTest(test: TestCaseCreate): void {
         this.onConsoleMessage(
           'Exercice créé avec succès !\n' + JSON.stringify(res, null, 2),
         );
-        // ici tu peux aussi faire une redirection, vider le formulaire, etc.
       },
       error: (err) => {
         this.onConsoleMessage(
-          'Erreur réseau lors de la création de l’exercice : ' +
+          'Erreur lors de la création de l’exercice : ' +
             (err.message ?? err),
         );
       },

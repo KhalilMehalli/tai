@@ -23,12 +23,13 @@ export class Editor {
   @Output() consoleMessage = new EventEmitter<string>();
 
 
-  @Input() language: string = "";
+  @Input() language: string = "c";
   /*
   true  -> teacher editor, can create new file and edit them 
   false -> student editor, can only write in the file
   */
   @Input() isTeacher: boolean = true;
+  @Input() inputFiles: FileCreate[]  = [];
 
 
   files: EditorFile[] = [];
@@ -40,9 +41,10 @@ export class Editor {
   }
 
   // Like a constructor but wait until the inputs are receive 
-  ngOnInit(): void {
-    const mainName = 'main.' + this.getDefaultExtension();
-    this.addFile(mainName, true, `#include <stdio.h>
+  ngOnChanges(): void {
+    if (this.isTeacher){
+      const mainName = 'main.' + this.getDefaultExtension();
+      this.addFile(mainName, true, `#include <stdio.h>
 #include <stdlib.h>
 #include "fonction.h"
 
@@ -53,7 +55,7 @@ int main(char argc, char ** argv) {
     printf("%d", c);
     return 0;
 }`);
-    this.addFile("fonction.c", true, `#include <stdio.h>
+      this.addFile("fonction.c", false, `#include <stdio.h>
 #include "fonction.h"
 
 int addition(int a, int b){
@@ -62,12 +64,29 @@ int addition(int a, int b){
 // </complete>
 }
 `);
-    this.addFile("fonction.h", true, `#ifndef FONCTION_H
+      this.addFile("fonction.h", false, `#ifndef FONCTION_H
 #define FONCTION_H
 
 int addition(int a, int b);
 
 #endif`);
+    }
+    else { //It is for a student so display the files 
+      // Convertion from FileCreate -> EditorFile
+      const newFiles = this.inputFiles.map(file => ({
+          ...file,  
+          id: this.counter++  
+        }));
+
+      // Add the files in the list of this editor
+      this.files.push(...newFiles);
+
+      if(this.files.length > 0)
+        this.setActiveFile(this.files[0]);
+      console.log("Editor : ", this.files);
+    }
+
+
   }
 
   addFile(newName?: string , isMain = false, content=""): void {

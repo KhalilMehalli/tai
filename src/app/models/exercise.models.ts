@@ -34,3 +34,9 @@ export interface ExerciseCreatePayload {
   tests: TestCaseCreate[];
   hints: HintCreate[];
 }
+
+export interface ApiResponse<T> {
+  status: boolean;
+  message: string;
+  data: T;
+}

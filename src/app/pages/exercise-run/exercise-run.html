@@ -1,0 +1,37 @@
+<div class="flex h-full w-full p-6 gap-6 bg-gray-800">
+
+    <!-- Left panel  -->
+    <div class="w-1/4 h-full bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
+
+      
+
+        </div>
+
+    <!-- Right panel  -->
+    <div class="w-3/4 bg-white rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">
+
+        <div class="flex-1 min-h-0">
+          <textarea id="description" placeholder="Description" class="w-full h-full border border-gray-300 rounded-xl p-3 
+                  text-gray-500 resize-none outline-none focus:border-gray-800"
+            [(ngModel)]="description"></textarea>
+        </div>
+
+        <div class="flex-[4_1] min-h-0 overflow-hidden" >
+            <!--Input(language, isTeacher) and output-->
+            <app-editor 
+                [isTeacher]="false"
+                [inputFiles]="files"
+                (consoleMessage)="onConsoleMessage($event)"
+            ></app-editor>
+        </div>
+
+        <div class="flex-[2_1] min-h-0 overflow-hidden" >        
+            <app-console
+                [text]="consoleText"
+            ></app-console>
+        </div>
+
+
+
+
+</div>
