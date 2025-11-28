@@ -9,8 +9,8 @@ DB_HINT = {}
 
 
 def db_create_exercise(exercise_data: ExerciseFullCreate) -> int:
-    # .dict() convert the schema ExerciceFullCreate into a dict and excluse the keys files, tests and hints
-    ex_dict = exercise_data.dict(exclude={"files", "tests", "hints"})
+    # model_dump() convert the schema ExerciceFullCreate into a dict and excluse the keys files, tests and hints
+    ex_dict = exercise_data.model_dump(exclude={"files", "tests", "hints"})
     
     new_id = len(DB_EXERCISES)
     DB_EXERCISES[new_id] = ex_dict
@@ -22,17 +22,18 @@ def db_create_files_and_markers(exercise_id: int, files: list[FileCreate]):
             # Call our "extract_teacher_markers_from_code" which will separate the content of the markers from the file
             parsed_result = extract_teacher_markers_from_code(file.content, file.extension)
         except ValueError as e:
-            raise ValueError(f"File {file.name} have a problem : {e}")
+            raise ValueError(f"Probléme dans le fichier {file.name} : {e}")
 
         # File saved 
         file_id = len(DB_FILES)
         DB_FILES[file_id] = {
             "exercise_id": exercise_id,
             "name": file.name,
+            "extension": file.extension,
+            "editable": file.editable, 
             "template_without_marker": parsed_result.template, 
             "is_main": file.is_main,
-            "position": file.position,
-            "extension": file.extension 
+            "position": file.position
         }
 
         # Save the markers of this file
@@ -48,7 +49,7 @@ def db_create_test(exercise_id: int, tests: list[TestCaseCreate]):
     for test in tests:
         test_id = len(DB_TEST)
         # On convertit l'objet Pydantic en dict
-        data = test.dict()
+        data = test.model_dump()
         # On ajoute la clé étrangère
         data["exercise_id"] = exercise_id
         
@@ -57,7 +58,7 @@ def db_create_test(exercise_id: int, tests: list[TestCaseCreate]):
 def db_create_hint(exercise_id: int, hints: list[HintCreate]):
     for hint in hints:
             hint_id = len(DB_HINT)
-            data = hint.dict()
+            data = hint.model_dump()
             data["exercise_id"] = exercise_id
             
             DB_HINT[hint_id] = data
@@ -99,7 +100,7 @@ async def create_exercise_beta(exercise_data: ExerciseFullCreate):
 
         return {
             "status": True, 
-            "message": f"Exercise {exercise_data.name} created successfully"
+            "message": f"Exercise {exercise_data.name} a bien été crée"
         }
     
     except ValueError as e:

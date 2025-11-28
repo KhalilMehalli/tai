@@ -21,9 +21,12 @@ class FileCreate(BaseModel):
     name: str # "main"
     content: str # code complete with the markers or without depending of the case
     extension: Extension # "c or java"
-    is_main: bool = False
-    editable: bool = False
+    is_main: bool 
+    editable: bool 
     position: int
+
+class File(FileCreate):
+    id: int
 
 class TestCaseCreate(BaseModel):
     argv: str  # "5 10" or "5,7,8,9"
@@ -31,12 +34,16 @@ class TestCaseCreate(BaseModel):
     comment: str = ""
     position: int
 
+class Test(TestCaseCreate):
+    id: int
 
 class HintCreate(BaseModel):
     body: str
     unlock_after_attempts: int
     position: int
 
+class Hint(HintCreate):
+    id: int
 
 # What the front will send when the teacher finish completely an exercise
 
@@ -59,6 +66,8 @@ class ExerciseFullCreate(BaseModel):
     # The hints
     hints: List[HintCreate]
 
+class Exercise(ExerciseFullCreate):
+    id: int
 
 # 
 

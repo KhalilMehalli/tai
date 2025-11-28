@@ -53,7 +53,7 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
     comment = COMMENT_SYMBOLS.get(extension)
     if comment is None:
-        raise ValueError(f"This extension doesn't have a comment symbol (//,#, ...) in the backend: {extension}")
+        raise ValueError(f"Cette extension n'a pas de commentaire attitré (//, #) dans le backend: {extension}")
     
     # Regex explanation:
     # {comment}\s*<complete\s*id="(?P<id>.*?)"> Start when it find a marker and capture the name of the id 
@@ -73,7 +73,7 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
         # Security Check, if a teacher writes a marker inside a marker : error 
         if "<complete" in content:
-             raise ValueError(f"Error in marker '{m_id}': Nested <complete> tag found. Please check your closing tags.")
+             raise ValueError(f"Erreur dans la balise '{m_id}': une balise imbriquée a été trouvée. Vérifiez votre balise fermante (</complete>)")
         
         # Store the marker and his content 
         markers_found.append(MarkerData(id=m_id, content=content))
