@@ -1,5 +1,5 @@
-from app.schemas.schemas import ExerciseFullCreate
-from app.services.parsing import extract_markers_from_code
+from app.schemas.schemas import ExerciseFullCreate, FileCreate, TestCaseCreate, HintCreate
+from app.utils.parsing import extract_teacher_markers_from_code
 
 DB_EXERCISES = {}
 DB_FILES = {}
@@ -7,77 +7,118 @@ DB_MARKERS = {}
 DB_TEST = {}
 DB_HINT = {}
 
+
+def db_create_exercise(exercise_data: ExerciseFullCreate) -> int:
+    # .dict() convert the schema ExerciceFullCreate into a dict and excluse the keys files, tests and hints
+    ex_dict = exercise_data.dict(exclude={"files", "tests", "hints"})
+    
+    new_id = len(DB_EXERCISES)
+    DB_EXERCISES[new_id] = ex_dict
+    return new_id
+
+def db_create_files_and_markers(exercise_id: int, files: list[FileCreate]):
+    for file in files:
+        try:
+            # Call our "extract_teacher_markers_from_code" which will separate the content of the markers from the file
+            parsed_result = extract_teacher_markers_from_code(file.content, file.extension)
+        except ValueError as e:
+            raise ValueError(f"File {file.name} have a problem : {e}")
+
+        # File saved 
+        file_id = len(DB_FILES)
+        DB_FILES[file_id] = {
+            "exercise_id": exercise_id,
+            "name": file.name,
+            "template_without_marker": parsed_result.template, 
+            "is_main": file.is_main,
+            "position": file.position,
+            "extension": file.extension 
+        }
+
+        # Save the markers of this file
+        for marker in parsed_result.markers:
+            marker_id = len(DB_MARKERS)
+            DB_MARKERS[marker_id] = {
+                "exercise_file_id": file_id,
+                "marker_id": marker.id,
+                "solution_content": marker.content
+            }
+
+def db_create_test(exercise_id: int, tests: list[TestCaseCreate]):
+    for test in tests:
+        test_id = len(DB_TEST)
+        # On convertit l'objet Pydantic en dict
+        data = test.dict()
+        # On ajoute la clé étrangère
+        data["exercise_id"] = exercise_id
+        
+        DB_TEST[test_id] = data
+
+def db_create_hint(exercise_id: int, hints: list[HintCreate]):
+    for hint in hints:
+            hint_id = len(DB_HINT)
+            data = hint.dict()
+            data["exercise_id"] = exercise_id
+            
+            DB_HINT[hint_id] = data
+
+
+# For later when the bdd are ON
+def db_rollback_exercise(exercise_id: int):
+    """
+    Clean the BDD if something went wrong
+    """
+
+
 async def create_exercise_beta(exercise_data: ExerciseFullCreate):
     """
     Receive the complete data of an exercice when the teacher valid and exercice
     """
-    # Exercice information treatment 
-    # .dict() convert the schema ExerciceFullCreate into a dict and excluse the keys files, tests and hints
-    ex_info = exercise_data.dict(exclude={"files", "tests", "hints"})
-    id_ex = len(DB_EXERCISES)
-    DB_EXERCISES[id_ex] = ex_info
+    try:
+        # Exercice information treatment 
+        ex_id = db_create_exercise(exercise_data)
+
+        # Files and markers treatment
+        if exercise_data.files:
+            db_create_files_and_markers(ex_id, exercise_data.files)
+
+        # Test treatment
+        if exercise_data.tests:
+            db_create_test(ex_id, exercise_data.tests)
+
+        # Hint treatment
+        if exercise_data.hints:
+            db_create_hint(ex_id, exercise_data.hints)
 
 
-    # Files treatment
-    for file in exercise_data.files:
-        try: 
-            # Call our "extract_markers_from_code" which will separate the content of the markers from the file
-           parsed_result = extract_markers_from_code(file.content, file.extension) 
-        except ValueError as e:
-            return {
-                "status": False, 
-                "message": str(e)
-            }
+        print("DB_Exercices", DB_EXERCISES)
+        print("DB_Files", DB_FILES)
+        print("DB_Markers", DB_MARKERS)
+        print("DB_TEST", DB_TEST)
+        print("DB_HINT", DB_HINT)
 
-
-        # Creation of our exercice
-        id_file = len(DB_FILES) 
-        DB_FILES[id_file] = {
-            "exercise_id": id_ex,
-            "name": file.name,
-            "template_without_marker": parsed_result.template, 
-            "is_main": file.is_main,
-            "position": file.position
+        return {
+            "status": True, 
+            "message": f"Exercise {exercise_data.name} created successfully"
         }
-
-
-        # Markers treatment 
-        for marker in parsed_result.markers:
-            marker_id = len(DB_MARKERS) 
-            DB_MARKERS[marker_id] = {
-                "exercise_file_id": id_file,
-                "marker_id": marker.id,
-                "solution_content": marker.content
-            }
     
-    # Test treatment 
-    for test in exercise_data.tests:
-        test_id = len(DB_TEST)
-        DB_TEST[test_id] = {
-            "exercise_id": id_ex,
-            "argv": test.argv,
-            "expected_output": test.expected_output,
-            "comment": test.comment,
-            "position": test.position
-        }
+    except ValueError as e:
+        #In case of an error (Parsing error here), delete all the exercise already created
 
-    # Hint treatment 
-    for hint in exercise_data.hints:
-        hint_id = len(DB_HINT)
-        DB_HINT[hint_id] = {
-            "exercise_id": id_ex,
-            "body": hint.body,
-            "unlock_after_attempts": hint.unlock_after_attempts,
-            "position": hint.position
+        db_rollback_exercise(ex_id)
+        return {
+            "status": False,
+            "message": str(e)
         }
-
-    print("DB_Exercices", DB_EXERCISES)
-    print("DB_Files", DB_FILES)
-    print("DB_Markers", DB_MARKERS)
-    return {
-        "status": True, 
-        "message": f"Exercise {exercise_data.name} created successfully"
-    }
+    
+    except Exception as e:
+        #Error I didn't take into account
+        
+        db_rollback_exercise(ex_id)
+        return {
+            "status": False,
+            "message": str(e)
+        }
 
 
 

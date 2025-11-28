@@ -19,7 +19,7 @@ class Visibility(str, Enum):
 
 class FileCreate(BaseModel):
     name: str # "main"
-    content: str # code complete with the markers 
+    content: str # code complete with the markers or without depending of the case
     extension: Extension # "c or java"
     is_main: bool = False
     editable: bool = False
@@ -70,3 +70,4 @@ class TestRunRequest(BaseModel):
     files: List[FileCreate]
     language: Language
     argv: str 
+

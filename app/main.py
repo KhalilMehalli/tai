@@ -2,9 +2,26 @@ from fastapi import FastAPI
 from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest
 from app.services.create_exercise import create_exercise_beta
 from app.services.compiler import compile_and_run_logic, compile_logic
+from app.tests.all_db import get_all_db_c
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173", 
+    "http://127.0.0.1:4200"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 @app.post("/exercises")
 async def create_exercise_endpoint(exercise_data: ExerciseFullCreate):
@@ -21,9 +38,18 @@ async def test_exercise(request: TestRunRequest):
 
 @app.post("/compilation")
 async def compilation_teacher_code(request: CompileRequest):
+    print(request)
     """ Route call after the teacher compile his code to test it """
     result = await compile_logic(request.files, request.language) 
     return result
+
+
+@app.get("/tests/db")
+def get_all_db_content():
+
+    exercises = get_all_db_c()
+        
+    return exercises
 
 
 @app.get("/")
