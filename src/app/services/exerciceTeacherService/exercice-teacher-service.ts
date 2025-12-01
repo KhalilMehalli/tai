@@ -1,26 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { FileCreate, ExerciseCreatePayload } from '../../models/exercise.models';
+import type { File, Exercise, ApiResponse } from '../../models/exercise.models';
 import { environment } from '../../../environments/environment.development'; // On importe l'environnement
 
 export interface CompilePayload {
-  files: FileCreate[];
+  files: File[];
   language: string;
 }
 
 export interface TestRunPayload {
-  files: FileCreate[];
+  files: File[];
   language: string;   
   argv: string;
 }
 
-export interface BackEndResponse {
-  status: boolean;
-  message: string;
-  stdout?: string;
-  stderr?: string;
-  exit_code?: number;
+interface RunResponse {
+  stdout: string;
+  stderr: string;
+  exit_code: number;
 }
 
 
@@ -34,15 +32,15 @@ export class ExerciceTeacherService {
   
   constructor(private http: HttpClient) {}
 
-  compile(payload: CompilePayload): Observable<BackEndResponse> {
-    return this.http.post<BackEndResponse>(this.API_COMPILE_URL, payload);
+  compile(payload: CompilePayload): Observable<ApiResponse<RunResponse>> {
+    return this.http.post<ApiResponse<RunResponse>>(this.API_COMPILE_URL, payload);
   }
 
-  runTest(payload: TestRunPayload): Observable<BackEndResponse> {
-    return this.http.post<BackEndResponse>(this.API_TEST_URL, payload);
+  runTest(payload: TestRunPayload): Observable<ApiResponse<RunResponse>> {
+    return this.http.post<ApiResponse<RunResponse>>(this.API_TEST_URL, payload);
   }
 
-  createExercise(payload: ExerciseCreatePayload): Observable<BackEndResponse> {
-  return this.http.post<BackEndResponse>(this.API_CREATE_EXERCISE_URL, payload);
+  createExercise(payload: Exercise): Observable<ApiResponse<RunResponse>> {
+  return this.http.post<ApiResponse<RunResponse>>(this.API_CREATE_EXERCISE_URL, payload);
 }
 }

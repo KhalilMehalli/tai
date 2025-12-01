@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { TestCaseCreate } from '../../models/exercise.models';
+import type { Test } from '../../models/exercise.models';
 
-interface TestRow extends TestCaseCreate{
+interface TestRow extends Test{
   id: number; 
   validated: boolean;
 }
@@ -15,8 +15,8 @@ interface TestRow extends TestCaseCreate{
 })
 
 export class Tests {
-  @Output() testsChange = new EventEmitter<TestCaseCreate[]>()
-  @Output() runTest = new EventEmitter<TestCaseCreate>();
+  @Output() testsChange = new EventEmitter<Test[]>()
+  @Output() runTest = new EventEmitter<Test>();
   @Output() consoleMessage = new EventEmitter<string>()
 
   tests: TestRow[] = [];
@@ -62,7 +62,7 @@ export class Tests {
 
   // Send the list of tests conforming to the backend type to the parent component 
   private emitTests(): void {
-    const payload: TestCaseCreate[] = this.tests
+    const payload: Test[] = this.tests
       .filter(t => t.validated && t.argv.trim() !== '')
       .map((t, index) => ({
         argv: t.argv.trim(),

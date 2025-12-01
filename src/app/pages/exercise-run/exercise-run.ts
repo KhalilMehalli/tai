@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
-import type { ExerciseCreatePayload, FileCreate } from '../../models/exercise.models';
+import { EditorConfig, STUDENT_CONFIG, Exercise, File } from '../../models/exercise.models';
 
 
 @Component({
@@ -15,9 +15,11 @@ import type { ExerciseCreatePayload, FileCreate } from '../../models/exercise.mo
 export class ExerciseRun {
   // The ID in the url
   @Input({ transform: numberAttribute }) id!: number;
+
+  options : EditorConfig = STUDENT_CONFIG;
   consoleText = '';
-  exerciseData!: ExerciseCreatePayload; 
-  files : FileCreate[] = [];
+  exerciseData!: Exercise; 
+  files : File[] = [];
 
 
   description: string = "";

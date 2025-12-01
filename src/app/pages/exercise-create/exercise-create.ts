@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Editor } from '../../components/editor/editor';
 import { Tests } from '../../components/tests/tests';
 import { Hints } from '../../components/hints/hints';
-import type { FileCreate, HintCreate, TestCaseCreate, ExerciseCreatePayload } from '../../models/exercise.models'; 
+import { File, Hint, Test, Exercise, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models'; 
 import { Console } from '../../components/console/console';
 import { FormsModule } from '@angular/forms';
 import { ExerciceTeacherService } from '../../services/exerciceTeacherService/exercice-teacher-service';
@@ -22,9 +22,12 @@ import { ExerciceTeacherService } from '../../services/exerciceTeacherService/ex
 })
 
 export class ExerciseCreate {
-  hints: HintCreate[] = [];
-  files: FileCreate[] = [];
-  tests: TestCaseCreate[] = [];
+  // THe options the editor has (Teacher = all options)
+  options: EditorConfig = TEACHER_CONFIG;
+
+  hints: Hint[] = [];
+  files: File[] = [];
+  tests: Test[] = [];
   consoleText = '';
 
   title: string = "";
@@ -39,17 +42,17 @@ export class ExerciseCreate {
 
   constructor(private exerciceTeacherService: ExerciceTeacherService) {}
 
-  onFilesChange(files: FileCreate[]) : void {
+  onFilesChange(files: File[]) : void {
     this.files = files;
     console.log(files);
   }
 
-  onTestsChange(tests: TestCaseCreate[]) : void{
+  onTestsChange(tests: Test[]) : void{
     this.tests = tests;
     console.log(tests);
   }
 
-  onHintsChange(hints: HintCreate[]) : void {
+  onHintsChange(hints: Hint[]) : void {
     this.hints = hints;
     console.log(hints);
 }
@@ -79,7 +82,7 @@ export class ExerciseCreate {
       });
     }  
 
-onRunTest(test: TestCaseCreate): void {
+onRunTest(test: Test): void {
     const payload = {
       files: this.files,
       language: this.language,
@@ -93,7 +96,7 @@ onRunTest(test: TestCaseCreate): void {
         this.onConsoleMessage(JSON.stringify(res, null, 2));
         // update the expected_output
         if(res.status)
-          test.expected_output = res.stdout?.trim() ?? test.expected_output;
+          test.expected_output = res.data.stdout?.trim() ?? test.expected_output;
         else
           test.expected_output = "error";
       },
@@ -119,7 +122,7 @@ onRunTest(test: TestCaseCreate): void {
     }
 
     // Payload construct
-    const payload: ExerciseCreatePayload = {
+    const payload: Exercise = {
       course_id: this.course_id,
       name: this.title.trim(),
       description: this.description.trim(),

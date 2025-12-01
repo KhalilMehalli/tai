@@ -15,35 +15,40 @@
             <input #nameInput  class=" w-min max-w-20 bg-transparent text-sm font-semibold outline-none 
                     border-b border-transparent"
             [value]="file.extension ? file.name + '.' + file.extension : file.name"
-            [readonly] = "!isTeacher"
+            [readonly] = "!options.canRenameFiles"
             (blur)="onNameChange(file, nameInput.value)"
             (keydown.enter)="$event.preventDefault(); nameInput.blur()"
             />
 
+            @if (options.canDeleteFiles){
             <button type="button"
             class="text-xs text-white hover:text-red-500"
-            (click)="deleteFile(file); $event.stopPropagation()"
-            [hidden]="!isTeacher">
+            (click)="deleteFile(file); $event.stopPropagation()">
             X
             </button>
+          }
         </div>
         }
 
+        @if (options.canAddFiles){
         <button
         type="button"
         class="px-3 py-1 text-sm font-mono rounded-t-xl bg-gray-700 text-white hover:bg-gray-600 border-b-2"
-        (click)="addFile()" [hidden]="!isTeacher">
+        (click)="addFile()" >
         + 
         </button>
+      }
     </div>
 
     <div class="flex items-center px-2 pt-2">
+      @if (options.canCompile){
       <button
         type="button"
         class="px-3 py-1 text-sm font-mono rounded-t-xl bg-gray-700 text-white hover:bg-gray-600 border-b-2"
-        (click)="onCompile()" [hidden]="!isTeacher">
+        (click)="onCompile()">
         Compilation
       </button>
+    }
     </div>
   </div>
 
@@ -54,20 +59,21 @@
                resize-none  outline-none overflow-auto"
         [value]="activeFile.content"
         (input)="onContentChange(contentInput.value)"
-        [readonly]="!isTeacher && !activeFile.editable"
+        [readonly]="options.respectEditableFlag && !activeFile.editable"
         placeholder="Écris ton code ici..."
       ></textarea>
 
+      <div class="absolute bottom-2 right-4 flex items-center gap-4 text-xs ">
         <!--Checkbox main-->
-        <div class="absolute bottom-2 right-4 flex items-center gap-4 text-xs ">
+        @if (options.canEditStructure){
         <label class="flex items-center gap-1 text-xs text-gray-200">
           <input #mainCheckbox type="checkbox"
             [checked]="activeFile.is_main"
             (change)="onMainChange(activeFile, mainCheckbox.checked)"
-            [disabled]="!isTeacher"
           />
           Main
         </label>
+        }
 
         <!--Checkbox editable-->
 
@@ -76,11 +82,11 @@
             type="checkbox"
             [checked]="activeFile.editable"
             (change)="onEditableChange(activeFile, editableCheckbox.checked)"
-            [disabled]="!isTeacher"
+            [disabled]="!options.canEditStructure"
           />
           Éditable
         </label>
-        </div>
+      </div>
     </div>
   } 
 </div>

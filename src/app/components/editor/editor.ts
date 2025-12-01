@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Output, Input} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { FileCreate } from '../../models/exercise.models';
+import { File, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models';
 
 const LANGUAGE_EXTENSIONS: Record<string, string> = {
   c: 'c',
 };
 
-interface EditorFile extends FileCreate{
+interface EditorFile extends File{
   id : number;
 }
 
@@ -18,18 +18,14 @@ interface EditorFile extends FileCreate{
 })
 
 export class Editor {
-  @Output() filesChange = new EventEmitter<FileCreate[]>();
+  @Output() filesChange = new EventEmitter<File[]>();
   @Output() compile = new EventEmitter<void>();
   @Output() consoleMessage = new EventEmitter<string>();
 
 
-  @Input() language: string = "c";
-  /*
-  true  -> teacher editor, can create new file and edit them 
-  false -> student editor, can only write in the file
-  */
-  @Input() isTeacher: boolean = true;
-  @Input() inputFiles: FileCreate[]  = [];
+  @Input() language: string = "";
+  @Input() inputFiles: File[]  = [];
+  @Input() options: EditorConfig = TEACHER_CONFIG;
 
 
   files: EditorFile[] = [];
@@ -40,57 +36,41 @@ export class Editor {
     return LANGUAGE_EXTENSIONS[this.language] ?? 'txt';
   }
 
-  // Like a constructor but wait until the inputs are receive 
+
+  // Like a constructor but refresh for every input 
   ngOnChanges(): void {
-    if (this.isTeacher){
-      const mainName = 'main.' + this.getDefaultExtension();
-      this.addFile(mainName, true, `#include <stdio.h>
-#include <stdlib.h>
-#include "fonction.h"
+    // Allow only the teacher to have a file open when he create a new exercise
+    this.addFile("main." + this.getDefaultExtension(), true)
+    this.rebuildFilesFromInput();
+  }
 
-int main(char argc, char ** argv) {
-    int a = atoi(argv[1]);
-    int b = atoi(argv[2]);
-    int c = addition(a, b);
-    printf("%d", c);
-    return 0;
-}`);
-      this.addFile("fonction.c", false, `#include <stdio.h>
-#include "fonction.h"
-
-int addition(int a, int b){
-// <complete id=1>
-   return a + b;
-// </complete>
-}
-`);
-      this.addFile("fonction.h", false, `#ifndef FONCTION_H
-#define FONCTION_H
-
-int addition(int a, int b);
-
-#endif`);
-    }
-    else { //It is for a student so display the files 
-      // Convertion from FileCreate -> EditorFile
-      const newFiles = this.inputFiles.map(file => ({
-          ...file,  
-          id: this.counter++  
-        }));
-
-      // Add the files in the list of this editor
-      this.files.push(...newFiles);
-
-      if(this.files.length > 0)
-        this.setActiveFile(this.files[0]);
-      console.log("Editor : ", this.files);
+  private rebuildFilesFromInput(): void {
+    if (!this.inputFiles || this.inputFiles.length === 0) {
+      return;
     }
 
+    // Reset the editor (in case for the futurrr)
+    this.files = [];
+    this.counter = 0;
+    this.activeFileId = null;
+    // Convertion from File -> EditorFile
+    const newFiles = this.inputFiles.map(file => ({
+        ...file,  
+        id: this.counter++  
+      }));
 
+    // Add the files in the list of this editor
+    this.files= newFiles;
+
+    if(this.files.length > 0)
+      this.setActiveFile(this.files[0]);
   }
 
   addFile(newName?: string , isMain = false, content=""): void {
-    const position = this.files.length;
+    if (!this.options.canAddFiles) {
+      this.consoleMessage.emit(`Ajout de fichier non autorisé :).`);
+      return;
+    }
 
     // If newName is null or undefined, used default name else use name
     const nameToUse = newName ?? `file${this.counter + 1}.${this.getDefaultExtension()}`;
@@ -103,7 +83,7 @@ int addition(int a, int b);
       extension: extension,     
       is_main: isMain,
       editable: true,
-      position,
+      position: this.files.length
     };
 
     this.files.push(newFile);
@@ -121,7 +101,16 @@ int addition(int a, int b);
   }
 
   onContentChange(newContent: string): void {
+    // Function that save the new  content (text) the user write
+    // If he has the right and the file is editable
     if (!this.activeFile) return;
+
+    
+    if (this.options.respectEditableFlag && !this.activeFile.editable) {
+      this.consoleMessage.emit(`Modification de ce fichier non autorisée.`);
+      return;
+    }
+
     this.activeFile.content = newContent;
     this.emitFiles();
   }
@@ -143,6 +132,10 @@ int addition(int a, int b);
 }
 
   onNameChange(file: EditorFile, newName: string): void {
+    if (!this.options.canRenameFiles) {
+      return;
+    }
+
     const trimmed = newName.trim();
     if (!trimmed) return; // If the name is empty, do nothing
 
@@ -154,6 +147,11 @@ int addition(int a, int b);
   }
 
   deleteFile(file: EditorFile): void {
+    if (!this.options.canDeleteFiles) {
+      this.consoleMessage.emit(`Suppression de fichier non autorisée.`);
+      return;
+    }
+
     if (this.files.length === 1) {
       this.consoleMessage.emit(`Impossible de supprimer le dernier fichier.`);
       return;
@@ -174,6 +172,11 @@ int addition(int a, int b);
 
   // clic on the checkbox Main
   onMainChange(file: EditorFile, checked: boolean): void {
+    if (!this.options.canEditStructure) {
+      this.consoleMessage.emit(`Impossible de designer ce fichier comme main.`);
+      return;
+    }
+
     if (checked) {
       // Only one main possible
       this.files.forEach(f => (f.is_main = f.id === file.id));
@@ -184,12 +187,20 @@ int addition(int a, int b);
   }
 
   onEditableChange(file: EditorFile, checked: boolean): void {
+      if (!this.options.canEditStructure) {
+      this.consoleMessage.emit(`Impossible de designer ce fichier comme editable.`);
+      return;
+    }
     file.editable = checked;
     this.emitFiles();
   }
 
   // Ask the parent composant to send all the file to the backend to compile it
   onCompile(): void {
+    if (!this.options.canCompile) {
+      this.consoleMessage.emit(`Impossible de compiler.`);
+      return;
+    }
     this.emitFiles();
     this.compile.emit();
 
@@ -197,7 +208,7 @@ int addition(int a, int b);
 
   private emitFiles(): void {
     // Send the list of files conforming to the backend type to the parent component 
-    const payload: FileCreate[] = this.files.map((f, index) => ({
+    const payload: File[] = this.files.map((f, index) => ({
       name: f.name,
       content: f.content,
       extension: f.extension,

@@ -1,9 +1,9 @@
 
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { HintCreate } from '../../models/exercise.models';
+import type { Hint } from '../../models/exercise.models';
 
-interface HintRow extends HintCreate {
+interface HintRow extends Hint {
   id: number; // For tracking in @for loops
   validated: boolean;
 }
@@ -15,7 +15,7 @@ interface HintRow extends HintCreate {
   styleUrl: './hints.css',
 })
 export class Hints {
-  @Output() hintsChange = new EventEmitter<HintCreate[]>();
+  @Output() hintsChange = new EventEmitter<Hint[]>();
 
   hints: HintRow[] = [] ;
   private counter = 0;
@@ -55,7 +55,7 @@ export class Hints {
 
   // Send the list of hints conforming to the backend type to the parent component 
   private emitHints(): void {
-    const payload: HintCreate[] = this.hints
+    const payload: Hint[] = this.hints
       .filter(h => h.validated && h.body.trim() !== '' && h.unlock_after_attempts > 0)
       .map((h, index) => ({
         body: h.body.trim(),

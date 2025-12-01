@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { ExerciseCreatePayload, ApiResponse } from '../../models/exercise.models';
+import type { Exercise, ApiResponse } from '../../models/exercise.models';
 import { environment } from '../../../environments/environment.development'; // On importe l'environnement
 
 
@@ -13,8 +13,8 @@ export class ExerciceStudentService {
   
   constructor(private http: HttpClient) {}
 
-  getExerciseForStudent(id: number): Observable<ApiResponse<ExerciseCreatePayload>> {
-    return this.http.get<ApiResponse<ExerciseCreatePayload>>(`${this.API_GET_EXERCISE}${id}`);
+  getExerciseForStudent(id: number): Observable<ApiResponse<Exercise>> {
+    return this.http.get<ApiResponse<Exercise>>(`${this.API_GET_EXERCISE}${id}`);
   }
 
 }

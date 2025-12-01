@@ -1,18 +1,21 @@
 //Type of a hint sent to the backend 
-export interface HintCreate { 
+export interface Hint{
+  id ?: number; 
   body: string;
   unlock_after_attempts: number;
   position: number;
 }
 
-export interface TestCaseCreate {
+export interface Test {
+  id ?: number;
   argv: string;
   expected_output: string;
   comment: string;
   position: number;
 }
 
-export interface FileCreate {
+export interface File {
+  id ?: number;
   name: string;
   content: string;
   extension: string;
@@ -21,7 +24,7 @@ export interface FileCreate {
   position: number;
 }
 
-export interface ExerciseCreatePayload {
+export interface Exercise {
   course_id: number;
   name: string;
   description: string;
@@ -30,9 +33,9 @@ export interface ExerciseCreatePayload {
   difficulty: number;
   position: number;
   
-  files: FileCreate[];
-  tests: TestCaseCreate[];
-  hints: HintCreate[];
+  files: File[];
+  tests: Test[];
+  hints: Hint[];
 }
 
 export interface ApiResponse<T> {
@@ -40,3 +43,61 @@ export interface ApiResponse<T> {
   message: string;
   data: T;
 }
+
+// EDITOR CONFIGURATION 
+
+export interface EditorConfig {
+  canAddFiles: boolean;
+  canDeleteFiles: boolean;
+  canRenameFiles: boolean;
+  canCompile: boolean;
+  canEditStructure: boolean; // Allow to change main and editable for a file
+  respectEditableFlag: boolean; // If true, files that are readonly will be in the editor
+}
+
+export const STUDENT_CONFIG: EditorConfig = {
+  canAddFiles: false,
+  canDeleteFiles: false,
+  canRenameFiles: false,
+  canCompile: false,
+  canEditStructure: false,
+  respectEditableFlag: true
+};
+
+export const TEACHER_CONFIG: EditorConfig = {
+  canAddFiles: true,
+  canDeleteFiles: true,
+  canRenameFiles: true,
+  canCompile: true,
+  canEditStructure: true,
+  respectEditableFlag: false
+};
+
+
+/*
+     this.addFile(mainName, true, `#include <stdio.h>
+#include <stdlib.h>
+#include "fonction.h"
+
+int main(char argc, char ** argv) {
+    int a = atoi(argv[1]);
+    int b = atoi(argv[2]);
+    int c = addition(a, b);
+    printf("%d", c);
+    return 0;
+}`);
+      this.addFile("fonction.c", false, `#include <stdio.h>
+#include "fonction.h"
+
+int addition(int a, int b){
+// <complete id=1>
+   return a + b;
+// </complete>
+}
+`);
+      this.addFile("fonction.h", false, `#ifndef FONCTION_H
+#define FONCTION_H
+
+int addition(int a, int b);
+
+#endif`);*/

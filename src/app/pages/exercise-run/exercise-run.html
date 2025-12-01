@@ -19,7 +19,7 @@
         <div class="flex-[4_1] min-h-0 overflow-hidden" >
             <!--Input(language, isTeacher) and output-->
             <app-editor 
-                [isTeacher]="false"
+                [options]="options"
                 [inputFiles]="files"
                 (consoleMessage)="onConsoleMessage($event)"
             ></app-editor>

@@ -21,7 +21,7 @@
             <!--Input(language, isTeacher) and output-->
             <app-editor 
                 [language]="language"
-                [isTeacher]="true"
+                [options]="options"
                 (filesChange)="onFilesChange($event)"
                 (compile)="onCompileRequest()"
                 (consoleMessage)="onConsoleMessage($event)"
