@@ -2,7 +2,7 @@ import os
 import tempfile
 import subprocess
 from typing import List
-from app.schemas.schemas import FileCreate, Language
+from app.schemas.schemas import File, Language
 
 COMPILER_CONFIG = {
     "c": {
@@ -11,13 +11,13 @@ COMPILER_CONFIG = {
     }
 }
 
-def name_extension(file : FileCreate):
+def name_extension(file : File):
     """Function to ensure to combine the filename with his extension."""
     if file.name.endswith(f".{file.extension}"): # Security for now because I am not sure if name will contains the extension or not 
         return file.name
     return f"{file.name}.{file.extension}"
 
-def write_files_to_folder(files: List[FileCreate], folder_path : str):
+def write_files_to_folder(files: List[File], folder_path : str):
     """ Writes all file objects to the folder_path directory. """
     try:
         for file in files:
@@ -31,7 +31,7 @@ def write_files_to_folder(files: List[FileCreate], folder_path : str):
         raise e
 
 
-def build_compilation_command(config: dict, files: List[FileCreate]):
+def build_compilation_command(config: dict, files: List[File]):
     """
     Generates the command list for subprocess by replacing placeholders
     like {input_files} with actual file names and filtering headers.
@@ -54,7 +54,7 @@ def build_compilation_command(config: dict, files: List[FileCreate]):
     return cmd
 
 
-def run_compilation(config: dict, files: List[FileCreate], tmp_dir: str):
+def run_compilation(config: dict, files: List[File], tmp_dir: str):
     """
     Execute the compilation command in the tmp_dir using subprocess.
     """
@@ -75,17 +75,21 @@ def run_compilation(config: dict, files: List[FileCreate], tmp_dir: str):
 
         return {"status": is_success,
                 "message": "Compilation réussie" if is_success else "Échec de la compilation",
-                "stdout": result.stdout, # 
-                "stderr": result.stderr, # Error and warnings 
-                "exit_code": result.returncode
+                "data" : {
+                    "stdout": result.stdout, # 
+                    "stderr": result.stderr, # Error and warnings 
+                    "exit_code": result.returncode
+                }
             }
 
     except Exception as e:
         return {"status": False,
                 "message": f"Erreur système interne : {str(e)}",
-                "stdout": "",
-                "stderr": str(e),
-                "exit_code": -1
+                "data" : {
+                    "stdout": "",
+                    "stderr": str(e),
+                    "exit_code": -1
+                }
             }
 
 def run_execution(config: dict, tmp_dir: str, argv: str):
@@ -109,26 +113,31 @@ def run_execution(config: dict, tmp_dir: str, argv: str):
             #timeout=2 
         )
 
+        is_success = (result.returncode == 0)
 
         return {
-            "status": (result.returncode == 0),
-            "message": "Exécution terminée",
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "exit_code": result.returncode
+            "status": (is_success),
+            "message":"Éxecution réussie" if is_success else "Échec de l'éxecution",
+            "data" : {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "exit_code": result.returncode
+            }
         }
 
     except Exception as e:
         return {
             "status": False,
             "message": f"Erreur d'exécution : {str(e)}",
-            "stdout": "",
-            "stderr": str(e),
-            "exit_code": -1
+            "data" : {
+                "stdout": "",
+                "stderr": str(e),
+                "exit_code": -1
+            }
         }
 
 
-def prepare_and_compile(files: List[FileCreate], language: Language, tmp_dir: str):
+def prepare_and_compile(files: List[File], language: Language, tmp_dir: str):
     """ Writes files and compiles them in the tmp_dir """
     # Write files in tmp_dir 
     try:
@@ -145,7 +154,7 @@ def prepare_and_compile(files: List[FileCreate], language: Language, tmp_dir: st
     return compile_result, config
 
 
-async def compile_logic(files: List[FileCreate], language: Language):
+async def compile_logic(files: List[File], language: Language):
     """ ONLY COMPILATION (For checking syntax errors in the teacher code). """
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -153,11 +162,11 @@ async def compile_logic(files: List[FileCreate], language: Language):
         return compile_result
 
 
-async def compile_and_run_logic(files: List[FileCreate], language: Language, argv: str):
-    """COMPILATION + EXECUTION (For running tests)."""
+async def compile_and_run_logic(files: List[File], language: Language, argv: str):
+    """COMPILATION + EXECUTION (For running test)."""
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # 1. On prépare et on compile
+        # Prepare and compile
         compile_result, config = prepare_and_compile(files, language, tmp_dir)
 
         # Early return if compilation fails
@@ -166,6 +175,26 @@ async def compile_and_run_logic(files: List[FileCreate], language: Language, arg
 
         # Execution 
         exec_result = run_execution(config, tmp_dir, argv)
+        
+        return exec_result
+
+async def compile_and_run_logics(files: List[File], language: Language, argvs: List[str]):
+    """COMPILATION + EXECUTION (For running tests)."""
+
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Prepare and compile
+        compile_result, config = prepare_and_compile(files, language, tmp_dir)
+
+        # Early return if compilation fails
+        if not compile_result["status"]:
+            return compile_result
+
+        # Execution 
+        exec_result = []
+
+        for argv in argvs:
+            exec_result.append(run_execution(config, tmp_dir, argv))
         
         return exec_result
 

@@ -1,11 +1,11 @@
-from app.schemas.schemas import ExerciseFullCreate, FileCreate, TestCaseCreate, HintCreate
+from app.schemas.schemas import ExerciseFullCreate, FileCreate, TestCaseCreate, HintCreate, Visibility, Language, Extension
 from app.utils.parsing import extract_teacher_markers_from_code
 
-DB_EXERCISES = {}
-DB_FILES = {}
-DB_MARKERS = {}
-DB_TEST = {}
-DB_HINT = {}
+DB_EXERCISES = {0: {'course_id': 0, 'name': 'C', 'description': 'Salut, premier cours de C', 'visibility': Visibility.PUBLIC, 'language': Language.C, 'difficulty': 1, 'position': 0}}
+DB_FILES = {0: {'exercise_id': 0, 'name': 'main', 'extension': Extension.C, 'editable': False, 'template_without_marker': '#include <stdio.h>\n#include <stdlib.h>\n#include "fonction.h"\n\nint main(char argc, char ** argv) {\n    int a = atoi(argv[1]);\n    int b = atoi(argv[2]);\n    int c = addition(a, b);\n    printf("%d", c);\n    return 0;\n}', 'is_main': True, 'position': 0}, 1: {'exercise_id': 0, 'name': 'fonction', 'extension': Extension.C, 'editable': True, 'template_without_marker': '#include <stdio.h>\n#include "fonction.h"\n\nint addition(int a, int b){\n// TODO: 1\n\n// END TODO: 1\n}\n', 'is_main': False, 'position': 1}, 2: {'exercise_id': 0, 'name': 'fonction', 'extension': Extension.H, 'editable': False, 'template_without_marker': '#ifndef FONCTION_H\n#define FONCTION_H\n\nint addition(int a, int b);\n\n#endif', 'is_main': False, 'position': 2}}
+DB_MARKERS = {0: {'exercise_file_id': 1, 'marker_id': '1', 'solution_content': '\n   return a + b;\n'}}
+DB_TEST = {0: {'argv': '1 1', 'expected_output': '2', 'comment': '', 'position': 0, 'exercise_id': 0}, 1: {'argv': '5 -9', 'expected_output': '-4', 'comment': '', 'position': 1, 'exercise_id': 0}}
+DB_HINT = {0: {'body': "C'est pas compliqué !!!", 'unlock_after_attempts': 3, 'position': 0, 'exercise_id': 0}}
 
 
 def db_create_exercise(exercise_data: ExerciseFullCreate) -> int:

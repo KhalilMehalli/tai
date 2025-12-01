@@ -58,25 +58,30 @@ class ExerciseFullCreate(BaseModel):
     position: int
 
     # The files 
-    files: List[FileCreate]
+    files: List[File]
 
     # The tests 
-    tests: List[TestCaseCreate]
+    tests: List[Test]
 
     # The hints
-    hints: List[HintCreate]
+    hints: List[Hint]
 
 class Exercise(ExerciseFullCreate):
     id: int
 
-# 
+# Type for teacher
 
 class CompileRequest(BaseModel):
     files: List[FileCreate]
     language: Language
 
-class TestRunRequest(BaseModel):
-    files: List[FileCreate]
-    language: Language
+class TestRunRequest(CompileRequest):
     argv: str 
+
+
+# Type for student
+
+class CodeRequest(BaseModel):
+    files: List[File]
+    language: Language
 

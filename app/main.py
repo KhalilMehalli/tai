@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest
+from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, CodeRequest
 from app.services.create_exercise import create_exercise_beta
 from app.services.compiler import compile_and_run_logic, compile_logic
-from app.services.exercise_run import get_exercise_for_student
+from app.services.exercise_run import get_exercise_for_student, test_student_code_
 from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
 
 
 app = FastAPI()
@@ -23,7 +24,7 @@ app.add_middleware(
 )
 
 
-# POST 
+# Creation exercise 
 
 @app.post("/exercises")
 async def create_exercise_endpoint(exercise_data: ExerciseFullCreate):
@@ -46,14 +47,21 @@ async def compilation_teacher_code(request: CompileRequest):
     return result
 
 
-# GET 
+# Student 
 
-@app.get("/exercises/{exercise_id}")
+@app.get("/student/exercise/{exercise_id}")
 def get_exercise_student(exercise_id: int):
 
-    exercise = get_exercise_for_student(exercise_id)     
+    exercise = get_exercise_for_student(exercise_id)  
     return exercise
 
+@app.post("/student/exercise/{exercise_id}/test")
+def test_student_code(exercise_id: int, request: CodeRequest):
+
+    test_student_code_(exercise_id, request.files, request.language)
+    return
+
+# Test
 @app.get("/tests/db")
 def get_all_db_content():
 
