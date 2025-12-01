@@ -37,11 +37,30 @@ export interface Exercise {
   tests: Test[];
   hints: Hint[];
 }
+//
+
+export interface CodePayload {
+  files: File[];
+  language: string;
+}
+
+export interface TestRunPayload extends CodePayload{
+  argv: string;
+}
+
+
+//
 
 export interface ApiResponse<T> {
   status: boolean;
   message: string;
   data: T;
+}
+
+export interface RunResponse {
+  stdout: string;
+  stderr: string;
+  exit_code: number;
 }
 
 // EDITOR CONFIGURATION 
@@ -51,6 +70,7 @@ export interface EditorConfig {
   canDeleteFiles: boolean;
   canRenameFiles: boolean;
   canCompile: boolean;
+  canTest: boolean; // Button "Test" to test the user code with the exercise test (written by the teacher)
   canEditStructure: boolean; // Allow to change main and editable for a file
   respectEditableFlag: boolean; // If true, files that are readonly will be in the editor
 }
@@ -60,6 +80,7 @@ export const STUDENT_CONFIG: EditorConfig = {
   canDeleteFiles: false,
   canRenameFiles: false,
   canCompile: false,
+  canTest: true,
   canEditStructure: false,
   respectEditableFlag: true
 };
@@ -69,6 +90,7 @@ export const TEACHER_CONFIG: EditorConfig = {
   canDeleteFiles: true,
   canRenameFiles: true,
   canCompile: true,
+  canTest: false,
   canEditStructure: true,
   respectEditableFlag: false
 };

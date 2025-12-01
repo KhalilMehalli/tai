@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
-import { EditorConfig, STUDENT_CONFIG, Exercise, File } from '../../models/exercise.models';
+import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload } from '../../models/exercise.models';
 
 
 @Component({
@@ -18,8 +18,12 @@ export class ExerciseRun {
 
   options : EditorConfig = STUDENT_CONFIG;
   consoleText = '';
+
   exerciseData!: Exercise; 
   files : File[] = [];
+  tests: Test[] = [];  
+  hints: Hint[] = [];
+
 
 
   description: string = "";
@@ -32,14 +36,18 @@ export class ExerciseRun {
     this.fetchExercise(this.id);
   }
 
+   
   private fetchExercise(id: number): void {
     this.exerciseStudentService.getExerciseForStudent(id).subscribe({
       next: (res) => {
         this.consoleText = JSON.stringify(res);
         this.exerciseData = res.data;
         this.files = this.exerciseData.files;
-        console.log(this.exerciseData);
-        console.log(this.files);
+        this.tests = this.exerciseData.tests;
+        this.hints = this.exerciseData.hints;
+        this.description = this.exerciseData.description;
+        console.log(this.files[0].id)
+        console.log(this.files[1].id)
 
       },
       error: (err) => {
@@ -54,5 +62,28 @@ export class ExerciseRun {
     this.consoleText = this.consoleText
       ? this.consoleText + '\n>' + line
       : '>' + line;
+  }
+
+  onFilesChange(files: File[]) : void {
+    this.files = files;
+    console.log(files);
+  }
+
+  OnStudentSend(): void { // Send the student file to the back 
+    const payload : CodePayload = {
+      files: this.files,
+      language: this.exerciseData.language
+    };
+
+    this.consoleText = JSON.stringify(payload);
+    this.exerciseStudentService.sendExerciseStudent(this.id,payload).subscribe({
+      next: (res) => {
+        this.consoleText = JSON.stringify(res);
+
+      },
+      error: (err) => {
+        this.consoleText = JSON.stringify(err.error.detail);
+      },
+    });
   }
 }

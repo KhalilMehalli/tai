@@ -1,14 +1,10 @@
-import { Component, EventEmitter, Output, Input} from '@angular/core';
+import { Component, EventEmitter, Output, Input, SimpleChanges} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { File, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models';
 
 const LANGUAGE_EXTENSIONS: Record<string, string> = {
   c: 'c',
 };
-
-interface EditorFile extends File{
-  id : number;
-}
 
 @Component({
   selector: 'app-editor',
@@ -20,6 +16,7 @@ interface EditorFile extends File{
 export class Editor {
   @Output() filesChange = new EventEmitter<File[]>();
   @Output() compile = new EventEmitter<void>();
+  @Output() studentSend = new EventEmitter<void>();
   @Output() consoleMessage = new EventEmitter<string>();
 
 
@@ -28,8 +25,9 @@ export class Editor {
   @Input() options: EditorConfig = TEACHER_CONFIG;
 
 
-  files: EditorFile[] = [];
-  private counter = 0;
+  files: File[] = [];
+
+  private tempIdCounter = -1;
   activeFileId: number | null = null;
 
   private getDefaultExtension(): string {
@@ -37,33 +35,39 @@ export class Editor {
   }
 
 
-  // Like a constructor but refresh for every input 
-  ngOnChanges(): void {
-    // Allow only the teacher to have a file open when he create a new exercise
-    this.addFile("main." + this.getDefaultExtension(), true)
-    this.rebuildFilesFromInput();
+  // Similar to a constructor, but runs whenever inputs change
+  ngOnChanges(changes: SimpleChanges): void {
+    // If the editor receives files, display them
+    if (changes['inputFiles'] && this.inputFiles) {
+       this.rebuildFilesFromInput();
+    }
+    // Only allow the teacher to have an open file when creating a new exercise,
+    // as they won't receive initial files but can add new ones.
+    if (this.files.length === 0 && this.options.canAddFiles && !changes['inputFiles']) {
+       this.addFile("main." + this.getDefaultExtension(), true);
+    }
   }
 
   private rebuildFilesFromInput(): void {
-    if (!this.inputFiles || this.inputFiles.length === 0) {
-      return;
-    }
-
     // Reset the editor (in case for the futurrr)
     this.files = [];
-    this.counter = 0;
-    this.activeFileId = null;
-    // Convertion from File -> EditorFile
+
     const newFiles = this.inputFiles.map(file => ({
         ...file,  
-        id: this.counter++  
+        id: file.id ?? this.generateTempId()
       }));
 
     // Add the files in the list of this editor
     this.files= newFiles;
 
-    if(this.files.length > 0)
-      this.setActiveFile(this.files[0]);
+    this.setActiveFile(this.files[0]);
+  }
+
+  // Files created in the editor have a negative ID. 
+  // This allows the editor to distinguish between locally created files 
+  // and those received from the backend (preserving their IDs).
+  private generateTempId(): number {
+    return this.tempIdCounter--;
   }
 
   addFile(newName?: string , isMain = false, content=""): void {
@@ -73,11 +77,11 @@ export class Editor {
     }
 
     // If newName is null or undefined, used default name else use name
-    const nameToUse = newName ?? `file${this.counter + 1}.${this.getDefaultExtension()}`;
+    const nameToUse = newName ?? `file${Math.abs(this.tempIdCounter + 1)}.${this.getDefaultExtension()}`;
     const { name, extension } = this.parseFileName(nameToUse);
 
-    const newFile: EditorFile = {
-      id : this.counter++,
+    const newFile: File = {
+      id : this.generateTempId(),
       name: name,
       content: content,
       extension: extension,     
@@ -87,22 +91,24 @@ export class Editor {
     };
 
     this.files.push(newFile);
-    this.activeFileId = newFile.id;
+    this.activeFileId = newFile.id!;
     this.emitFiles();
     this.consoleMessage.emit(`Fichier "${newFile.name}" créé.`);
   }
 
-  setActiveFile(file: EditorFile): void {
-    this.activeFileId = file.id;
+  setActiveFile(file: File): void {
+    if (file.id !== undefined) {
+      this.activeFileId = file.id;
+    }
   }
 
-  get activeFile(): EditorFile | undefined {
+  get activeFile(): File | undefined {
     return this.files.find(f => f.id === this.activeFileId);
   }
 
   onContentChange(newContent: string): void {
-    // Function that save the new  content (text) the user write
-    // If he has the right and the file is editable
+    // Saves the new content (text) written by the user.
+    // Checks if they have the right and if the file is editable.
     if (!this.activeFile) return;
 
     
@@ -131,7 +137,7 @@ export class Editor {
     return { name, extension };
 }
 
-  onNameChange(file: EditorFile, newName: string): void {
+  onNameChange(file: File, newName: string): void {
     if (!this.options.canRenameFiles) {
       return;
     }
@@ -146,7 +152,7 @@ export class Editor {
     this.emitFiles();
   }
 
-  deleteFile(file: EditorFile): void {
+  deleteFile(file: File): void {
     if (!this.options.canDeleteFiles) {
       this.consoleMessage.emit(`Suppression de fichier non autorisée.`);
       return;
@@ -171,7 +177,7 @@ export class Editor {
   }
 
   // clic on the checkbox Main
-  onMainChange(file: EditorFile, checked: boolean): void {
+  onMainChange(file: File, checked: boolean): void {
     if (!this.options.canEditStructure) {
       this.consoleMessage.emit(`Impossible de designer ce fichier comme main.`);
       return;
@@ -186,7 +192,7 @@ export class Editor {
     this.emitFiles();
   }
 
-  onEditableChange(file: EditorFile, checked: boolean): void {
+  onEditableChange(file: File, checked: boolean): void {
       if (!this.options.canEditStructure) {
       this.consoleMessage.emit(`Impossible de designer ce fichier comme editable.`);
       return;
@@ -206,6 +212,17 @@ export class Editor {
 
   }
 
+    // Ask the parent composant to send all the file to the backend to run it for the student
+  onStudentSend(): void {
+    if (!this.options.canTest) {
+      this.consoleMessage.emit(`Impossible d'envoyer.`);
+      return;
+    }
+    this.emitFiles();
+    this.studentSend.emit();
+
+  }
+
   private emitFiles(): void {
     // Send the list of files conforming to the backend type to the parent component 
     const payload: File[] = this.files.map((f, index) => ({
@@ -215,6 +232,10 @@ export class Editor {
       is_main: f.is_main,
       editable: f.editable,
       position: index,
+
+      // If the file comes from the backend (ID > 0), keep the ID.
+      // If the file was created in the editor (ID < 0), do not send the ID (the DB assign one).
+      ...(f.id && f.id > 0 ? { id: f.id } : {})
     }));
 
     this.consoleMessage.emit(JSON.stringify(payload));

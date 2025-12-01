@@ -22,6 +22,8 @@
                 [options]="options"
                 [inputFiles]="files"
                 (consoleMessage)="onConsoleMessage($event)"
+                (filesChange)="onFilesChange($event)"
+                (studentSend)="OnStudentSend()"
             ></app-editor>
         </div>
 

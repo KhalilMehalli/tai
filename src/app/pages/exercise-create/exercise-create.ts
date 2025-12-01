@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Editor } from '../../components/editor/editor';
 import { Tests } from '../../components/tests/tests';
 import { Hints } from '../../components/hints/hints';
-import { File, Hint, Test, Exercise, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models'; 
+import { File, Hint, Test, Exercise, EditorConfig, TEACHER_CONFIG, CodePayload } from '../../models/exercise.models'; 
 import { Console } from '../../components/console/console';
 import { FormsModule } from '@angular/forms';
 import { ExerciceTeacherService } from '../../services/exerciceTeacherService/exercice-teacher-service';
@@ -65,9 +65,9 @@ export class ExerciseCreate {
   }
 
   onCompileRequest(): void {
-      const payload = {
+      const payload : CodePayload = {
         files: this.files,
-        language: "c",
+        language: this.language
       };
 
       this.onConsoleMessage('Compilation en cours...');

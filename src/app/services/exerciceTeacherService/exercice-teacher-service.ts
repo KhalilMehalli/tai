@@ -1,25 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { File, Exercise, ApiResponse } from '../../models/exercise.models';
+import type { File, Exercise, ApiResponse, RunResponse, CodePayload, TestRunPayload } from '../../models/exercise.models';
 import { environment } from '../../../environments/environment.development'; // On importe l'environnement
 
-export interface CompilePayload {
-  files: File[];
-  language: string;
-}
 
-export interface TestRunPayload {
-  files: File[];
-  language: string;   
-  argv: string;
-}
 
-interface RunResponse {
-  stdout: string;
-  stderr: string;
-  exit_code: number;
-}
 
 
 @Injectable({
@@ -32,7 +18,7 @@ export class ExerciceTeacherService {
   
   constructor(private http: HttpClient) {}
 
-  compile(payload: CompilePayload): Observable<ApiResponse<RunResponse>> {
+  compile(payload: CodePayload): Observable<ApiResponse<RunResponse>> {
     return this.http.post<ApiResponse<RunResponse>>(this.API_COMPILE_URL, payload);
   }
 
