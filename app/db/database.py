@@ -1,10 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from app.config import settings
+from app.core.config import settings
 
 
 # Create the engine sqlAlchemy to communicate with postgresql
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.DB_URL)
 
 # Each API requets will have it's own session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -17,6 +17,6 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        yield db
+        yield db # The function will pause here until the seesion will be done
     finally:
         db.close()

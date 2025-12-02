@@ -1,19 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List
-from enum import Enum
+from app.core.enums import Extension, Language, Visibility
 
-# Enums. Will automaticaly reject a valeur not in an Enum and better readability
-
-class Language(str, Enum):
-    C = "c"
-
-class Extension(str, Enum):
-    C = "c"
-    H = "h" 
-
-class Visibility(str, Enum):
-    PUBLIC = "public"
-    PRIVATE = "private"
 
 # The composition of an exercise 
 

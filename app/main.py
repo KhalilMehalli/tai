@@ -5,10 +5,13 @@ from app.services.compiler import compile_and_run_logic, compile_logic
 from app.services.exercise_run import get_exercise_for_student, test_student_code_
 from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
+from app.core.config import settings
+from app.db.database import get_db
 
 
 app = FastAPI()
+
+#database_models.Base.metadata.create_all()
 
 origins = [
     "http://localhost:5173", 
