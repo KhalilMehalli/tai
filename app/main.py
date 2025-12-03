@@ -6,12 +6,14 @@ from app.services.exercise_run import get_exercise_for_student, test_student_cod
 from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.db.database import get_db
+from app.db.database import get_db, engine
+from app.db import models
 
+# Create all the table if it's the first time 
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-#database_models.Base.metadata.create_all()
 
 origins = [
     "http://localhost:5173", 

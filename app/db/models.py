@@ -1,6 +1,6 @@
 # Table postgresql in Python/SqlAlchemy
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime, Enum as SqlEnum
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, UniqueConstraint,  DateTime, Enum as SqlEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -43,14 +43,14 @@ class Course(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    unit_id = Column(Integer, ForeignKey("units.id", ondelete="CASCADE"), nullable=False)
+    unit_id = Column(Integer, ForeignKey("unit.id", ondelete="CASCADE"), nullable=False)
     visibility = Column(SqlEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
     difficulty = Column(Integer, nullable=False)
     position = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     unit = relationship("Unit", back_populates="courses")
-    exercise = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
+    exercises = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
 
 class Exercise(Base):
     __tablename__ = "exercise"
@@ -65,13 +65,10 @@ class Exercise(Base):
     position = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    course = relationship("Course", back_populates="exercise")
+    course = relationship("Course", back_populates="exercises")
     files = relationship("ExerciseFile", back_populates="exercise", cascade="all, delete-orphan")
     tests = relationship("TestCase", back_populates="exercise", cascade="all, delete-orphan")
     hints = relationship("Hint", back_populates="exercise", cascade="all, delete-orphan")
-
-    submission_histories = relationship("SubmissionHistory",back_populates="exercise",cascade="all, delete-orphan",)
-    exercise_progresses = relationship("ExerciseProgress",back_populates="exercise",cascade="all, delete-orphan",)
 
 class ExerciseFile(Base):
     __tablename__ = "exercise_file"
@@ -88,9 +85,6 @@ class ExerciseFile(Base):
 
     exercise = relationship("Exercise", back_populates="files")
     markers = relationship("ExerciseMarker", back_populates="file", cascade="all, delete-orphan")
-
-    # Student markers
-    student_markers = relationship("SubmissionMarker", back_populates="file", cascade="all, delete-orphan")
 
 
 class ExerciseMarker(Base):
@@ -145,11 +139,12 @@ class SubmissionHistory(Base):
     error_log = Column(Text)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="submissions")
-    exercise = relationship("Exercise", back_populates="submission_history")
+    user = relationship("User", back_populates="submission_histories")
 
-    student_markers = relationship("SubmissionMarker", back_populates="submission_history", cascade="all, delete-orphan")
-    student_result = relationship("SubmissionResult", back_populates="submission_history", cascade="all, delete-orphan")
+    # one way because the original file don't need to know all the attemps of all the student 
+    exercise = relationship("Exercise")
+    submission_markers = relationship("SubmissionMarker", back_populates="submission_history", cascade="all, delete-orphan")
+    submission_results = relationship("SubmissionResult", back_populates="submission_history", cascade="all, delete-orphan")
 
 
 class SubmissionMarker(Base):
@@ -162,7 +157,10 @@ class SubmissionMarker(Base):
     content = Column(Text, nullable=False) # La réponse de l'élève
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    submission_history = relationship("SubmissionHistory", back_populates="markers")
+    submission_history = relationship("SubmissionHistory", back_populates="submission_markers")
+
+    original_file = relationship("ExerciseFile")
+
 
 
 class SubmissionResult(Base):
@@ -174,19 +172,20 @@ class SubmissionResult(Base):
     status = Column(SqlEnum(SubmissionStatus), nullable=False)
     actual_output = Column(Text, nullable=False)
 
-    submission_history = relationship("SubmissionHistory", back_populates="results")
+    submission_history = relationship("SubmissionHistory", back_populates="submission_results")
+    test_case = relationship("TestCase")
 
 
 class ExerciseProgress(Base):
     __tablename__ = "exercise_progress"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    exercise_id = Column(Integer, ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    exercise_id = Column(Integer, ForeignKey("exercise.id", ondelete="CASCADE"), nullable=False)
     status = Column(SqlEnum(ProgressStatus), default=ProgressStatus.NOT_STARTED, nullable=False)
     attempts_count = Column(Integer, default=0)
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     last_activity = Column(DateTime(timezone=True))
 
-    user = relationship("User", back_populates="exercise_progress")
-    exercise = relationship("Exercise", back_populates="student_progress")
+    user = relationship("User", back_populates="exercise_progresses")
+    exercise = relationship("Exercise")
