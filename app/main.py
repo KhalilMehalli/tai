@@ -10,7 +10,7 @@ from app.db.database import get_db, engine
 from app.db import models
 
 # Create all the table if it's the first time 
-models.Base.metadata.create_all(bind=engine)
+#models.Base.metadata.create_all(bind=engine) used before alembic, now it's alembic which will configure the db
 
 app = FastAPI()
 
