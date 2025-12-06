@@ -34,6 +34,7 @@ app.add_middleware(
 @app.post("/exercises")
 async def create_exercise_endpoint(exercise_data: ExerciseFullCreate):
     """ Route call after the teacher use the button 'VALIDER'. """
+    print(exercise_data)
     result = await create_exercise_beta(exercise_data)
     return result
 

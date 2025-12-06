@@ -34,8 +34,27 @@ class Hint(HintCreate):
     id: int
 
 # What the front will send when the teacher finish completely an exercise
-
 class ExerciseFullCreate(BaseModel):
+    #  General informations 
+    course_id: int
+    name: str
+    description: str
+    visibility: Visibility
+    language: Language
+    difficulty: int = Field(..., ge=1, le=5) # Automatic validation between [1,5]
+    position: int
+
+    # The files 
+    files: List[FileCreate]
+
+    # The tests 
+    tests: List[TestCaseCreate]
+
+    # The hints
+    hints: List[HintCreate]
+
+ # What the front will receive when a student demand an exercise
+class ExerciseFull(BaseModel):
     #  General informations 
     course_id: int
     name: str
