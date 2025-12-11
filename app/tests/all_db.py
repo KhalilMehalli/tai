@@ -1,3 +1,4 @@
+"""
 from app.services.create_exercise import DB_EXERCISES, DB_FILES, DB_TEST, DB_HINT, DB_MARKERS
 
 def get_all_db_c():
@@ -62,3 +63,4 @@ def get_all_db_c():
         exercises.append(exercise_detail)
     
     return exercises
+"""

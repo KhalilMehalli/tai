@@ -1,130 +1,111 @@
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.schemas.schemas import ExerciseFullCreate, FileCreate, TestCaseCreate, HintCreate
+from app.db.models import ExerciseModel, ExerciseFileModel, ExerciseMarkerModel, TestCaseModel, HintModel, CourseModel 
+
 from app.utils.parsing import extract_teacher_markers_from_code
-from app.core.enums import  Visibility, Language, Extension
 
-DB_EXERCISES = {0: {'course_id': 0, 'name': 'C', 'description': 'Salut, premier cours de C', 'visibility': Visibility.PUBLIC, 'language': Language.C, 'difficulty': 1, 'position': 0}}
-DB_FILES = {0: {'exercise_id': 0, 'name': 'main', 'extension': Extension.C, 'editable': False, 'template_without_marker': '#include <stdio.h>\n#include <stdlib.h>\n#include "fonction.h"\n\nint main(char argc, char ** argv) {\n    int a = atoi(argv[1]);\n    int b = atoi(argv[2]);\n    int c = addition(a, b);\n    printf("%d", c);\n    return 0;\n}', 'is_main': True, 'position': 0}, 1: {'exercise_id': 0, 'name': 'fonction', 'extension': Extension.C, 'editable': True, 'template_without_marker': '#include <stdio.h>\n#include "fonction.h"\n\nint addition(int a, int b){\n// TODO: 1\n\n// END TODO: 1\n}\n', 'is_main': False, 'position': 1}, 2: {'exercise_id': 0, 'name': 'fonction', 'extension': Extension.H, 'editable': False, 'template_without_marker': '#ifndef FONCTION_H\n#define FONCTION_H\n\nint addition(int a, int b);\n\n#endif', 'is_main': False, 'position': 2}}
-DB_MARKERS = {0: {'exercise_file_id': 1, 'marker_id': '1', 'solution_content': '\n   return a + b;\n'}}
-DB_TEST = {0: {'argv': '1 1', 'expected_output': '2', 'comment': '', 'position': 0, 'exercise_id': 0}, 1: {'argv': '5 -9', 'expected_output': '-4', 'comment': '', 'position': 1, 'exercise_id': 0}}
-DB_HINT = {0: {'body': "C'est pas compliqué !!!", 'unlock_after_attempts': 3, 'position': 0, 'exercise_id': 0}}
-
-
-def db_create_exercise(exercise_data: ExerciseFullCreate) -> int:
-    # model_dump() convert the schema ExerciceFullCreate into a dict and excluse the keys files, tests and hints
-    ex_dict = exercise_data.model_dump(exclude={"files", "tests", "hints"})
-    
-    new_id = len(DB_EXERCISES)
-    DB_EXERCISES[new_id] = ex_dict
-    return new_id
-
-def db_create_files_and_markers(exercise_id: int, files: list[FileCreate]):
-    for file in files:
+def prepare_files_and_markers(files_data: list[FileCreate]) -> list[ExerciseFileModel]:
+    """Prepare the sqlAlchemy object ExerciseFileModel and ExerciseMarkerModel without saving them"""
+    exercise_files = []
+    for file_data in files_data:
         try:
-            # Call our "extract_teacher_markers_from_code" which will separate the content of the markers from the file
-            parsed_result = extract_teacher_markers_from_code(file.content, file.extension)
+            parsed_result = extract_teacher_markers_from_code(file_data.content, file_data.extension)
         except ValueError as e:
-            raise ValueError(f"Probléme dans le fichier {file.name} : {e}")
+            # Call our "extract_teacher_markers_from_code" which will separate the content of the markers from the file
+            raise ValueError(f"Erreur de syntaxe dans le fichier '{file_data.name}': {str(e)}")
 
-        # File saved 
-        file_id = len(DB_FILES)
-        DB_FILES[file_id] = {
-            "exercise_id": exercise_id,
-            "name": file.name,
-            "extension": file.extension,
-            "editable": file.editable, 
-            "template_without_marker": parsed_result.template, 
-            "is_main": file.is_main,
-            "position": file.position
-        }
-
-        # Save the markers of this file
+        new_file = ExerciseFileModel(
+            name=file_data.name,
+            extension=file_data.extension,
+            is_main=file_data.is_main,
+            editable=file_data.editable,
+            position=file_data.position,
+            template_without_marker=parsed_result.template
+        )
         for marker in parsed_result.markers:
-            marker_id = len(DB_MARKERS)
-            DB_MARKERS[marker_id] = {
-                "exercise_file_id": file_id,
-                "marker_id": marker.id,
-                "solution_content": marker.content
-            }
+            new_file.markers.append(ExerciseMarkerModel(
+                marker_id=marker.id,
+                solution_content=marker.content
+            ))
+        exercise_files.append(new_file)
+    return exercise_files
 
-def db_create_test(exercise_id: int, tests: list[TestCaseCreate]):
-    for test in tests:
-        test_id = len(DB_TEST)
-        # On convertit l'objet Pydantic en dict
-        data = test.model_dump()
-        # On ajoute la clé étrangère
-        data["exercise_id"] = exercise_id
-        
-        DB_TEST[test_id] = data
+def prepare_tests(tests_data: list[TestCaseCreate]) -> list[TestCaseModel]:
+    return [TestCaseModel(**test.model_dump()) for test in tests_data]
 
-def db_create_hint(exercise_id: int, hints: list[HintCreate]):
-    for hint in hints:
-            hint_id = len(DB_HINT)
-            data = hint.model_dump()
-            data["exercise_id"] = exercise_id
-            
-            DB_HINT[hint_id] = data
+def prepare_hints(hints_data: list[HintCreate]) -> list[HintModel]:
+    return [HintModel(**hint.model_dump()) for hint in hints_data]
 
 
-# For later when the bdd are ON
-def db_rollback_exercise(exercise_id: int):
-    """
-    Clean the BDD if something went wrong
-    """
-
-
-async def create_exercise_beta(exercise_data: ExerciseFullCreate):
+def create_exercise(exercise_data: ExerciseFullCreate, db: Session):
     """
     Receive the complete data of an exercice when the teacher valid and exercice
     """
     try:
-        # Exercice information treatment 
-        ex_id = db_create_exercise(exercise_data)
+        
+        # Check if the course exist before creating the new cexercise
+        course_exists = db.query(CourseModel).filter(CourseModel.id == exercise_data.course_id).first()
+        
+        if not course_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Le cours avec l'id {exercise_data.course_id} n'existe pas."
+            )
 
-        # Files and markers treatment
+            
+        # Creation of the ExerciseModel Object
+        exercise_info = exercise_data.model_dump(exclude={"files", "tests", "hints"})
+        new_exercise = ExerciseModel(**exercise_info)
+
+        # Prepare and attach the children ExerciseFIleMOdel, TestCaseModel and HintModel to the ExerciseModel Object 
         if exercise_data.files:
-            db_create_files_and_markers(ex_id, exercise_data.files)
-
-        # Test treatment
+            new_exercise.files.extend(prepare_files_and_markers(exercise_data.files))
+        
         if exercise_data.tests:
-            db_create_test(ex_id, exercise_data.tests)
+            new_exercise.tests.extend(prepare_tests(exercise_data.tests))
 
-        # Hint treatment
         if exercise_data.hints:
-            db_create_hint(ex_id, exercise_data.hints)
+            new_exercise.hints.extend(prepare_hints(exercise_data.hints))
 
-
-        print("DB_Exercices", DB_EXERCISES)
-        print("DB_Files", DB_FILES)
-        print("DB_Markers", DB_MARKERS)
-        print("DB_TEST", DB_TEST)
-        print("DB_HINT", DB_HINT)
+        # Communication with the db
+        db.add(new_exercise)
+        db.commit() # COmmit the change
+        db.refresh(new_exercise) # Get the id of the new exercise
 
         return {
-            "status": True, 
-            "message": f"Exercise {exercise_data.name} a bien été crée"
+            "status": True,
+            "message": f"L'exercice '{new_exercise.name}' a bien été créé.",
+            "data": {
+                "id": new_exercise.id
+            }
         }
+
     
     except ValueError as e:
-        #In case of an error (Parsing error here), delete all the exercise already created
+        #In case of an parsing error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=str(e)
+        )
 
-        db_rollback_exercise(ex_id)
-        return {
-            "status": False,
-            "message": str(e)
-        }
-    
+    except SQLAlchemyError as e:
+        # Error when communicating with the db
+        print(str(e))
+        db.rollback() # clean the session, no need to do other thing because we didn't commit yet
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de l'enregistrement en base de données : {str(e)}"
+        )
+
     except Exception as e:
         #Error I didn't take into account
-        
-        db_rollback_exercise(ex_id)
-        return {
-            "status": False,
-            "message": str(e)
-        }
-
-
-
-        
-
-
+        print(str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur inattendue est survenue : {str(e)}"
+        )
 

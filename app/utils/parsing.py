@@ -53,7 +53,8 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
     comment = COMMENT_SYMBOLS.get(extension)
     if comment is None:
-        raise ValueError(f"Cette extension n'a pas de commentaire attitré (//, #) dans le backend: {extension}")
+        # This file cannot have a markers (ex : txt file)
+        return ParsedResult(template=full_content, markers=[])
     
     # Regex explanation:
     # {comment}\s*<complete\s*id="(?P<id>.*?)"> Start when it find a marker and capture the name of the id 

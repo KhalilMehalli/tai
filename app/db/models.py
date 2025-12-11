@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from app.db.database import Base
 from app.core.enums import Language, Visibility, UserRole, SubmissionStatus, ProgressStatus
 
-class User(Base): # Base allow SqlAlchemy to now it is a sql table
+class UserModel(Base): # Base allow SqlAlchemy to now it is a sql table
     __tablename__ = "user" #Name of the sql table
 
     id = Column(Integer, primary_key=True, index=True) # "Index="True" for faster processing
@@ -18,13 +18,13 @@ class User(Base): # Base allow SqlAlchemy to now it is a sql table
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relations
-    unit_authored = relationship("Unit", back_populates="author") # back_populates connect the value unit_authored with author in Unit table
-    submission_histories  = relationship("SubmissionHistory", back_populates="user")
-    exercise_progresses = relationship("ExerciseProgress", back_populates="user")
+    unit_authored = relationship("UnitModel", back_populates="author") # back_populates connect the value unit_authored with author in Unit table
+    submission_histories  = relationship("SubmissionHistoryModel", back_populates="user")
+    exercise_progresses = relationship("ExerciseProgressModel", back_populates="user")
     
 
 
-class Unit(Base):
+class UnitModel(Base):
     __tablename__ = "unit"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -35,10 +35,10 @@ class Unit(Base):
     difficulty = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    author = relationship("User", back_populates="unit_authored")
-    courses = relationship("Course", back_populates="unit", cascade="all, delete-orphan")
+    author = relationship("UserModel", back_populates="unit_authored")
+    courses = relationship("CourseModel", back_populates="unit", cascade="all, delete-orphan")
 
-class Course(Base):
+class CourseModel(Base):
     __tablename__ = "course"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -49,10 +49,10 @@ class Course(Base):
     position = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    unit = relationship("Unit", back_populates="courses")
-    exercises = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
+    unit = relationship("UnitModel", back_populates="courses")
+    exercises = relationship("ExerciseModel", back_populates="course", cascade="all, delete-orphan")
 
-class Exercise(Base):
+class ExerciseModel(Base):
     __tablename__ = "exercise"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -65,12 +65,12 @@ class Exercise(Base):
     position = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    course = relationship("Course", back_populates="exercises")
-    files = relationship("ExerciseFile", back_populates="exercise", cascade="all, delete-orphan")
-    tests = relationship("TestCase", back_populates="exercise", cascade="all, delete-orphan")
-    hints = relationship("Hint", back_populates="exercise", cascade="all, delete-orphan")
+    course = relationship("CourseModel", back_populates="exercises")
+    files = relationship("ExerciseFileModel", back_populates="exercise", cascade="all, delete-orphan")
+    tests = relationship("TestCaseModel", back_populates="exercise", cascade="all, delete-orphan")
+    hints = relationship("HintModel", back_populates="exercise", cascade="all, delete-orphan")
 
-class ExerciseFile(Base):
+class ExerciseFileModel(Base):
     __tablename__ = "exercise_file"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -83,11 +83,11 @@ class ExerciseFile(Base):
     position = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    exercise = relationship("Exercise", back_populates="files")
-    markers = relationship("ExerciseMarker", back_populates="file", cascade="all, delete-orphan")
+    exercise = relationship("ExerciseModel", back_populates="files")
+    markers = relationship("ExerciseMarkerModel", back_populates="file", cascade="all, delete-orphan")
 
 
-class ExerciseMarker(Base):
+class ExerciseMarkerModel(Base):
     __tablename__ = "exercise_marker"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -99,22 +99,23 @@ class ExerciseMarker(Base):
     # Markers names need to be unique in a file
     __table_args__ = (UniqueConstraint('exercise_file_id', 'marker_id', name='unique_marker_per_file'),)
 
-    file = relationship("ExerciseFile", back_populates="markers")
+    file = relationship("ExerciseFileModel", back_populates="markers")
 
 
-class TestCase(Base):
+class TestCaseModel(Base):
     __tablename__ = "test_case"
 
     id = Column(Integer, primary_key=True, index=True)
     exercise_id = Column(Integer, ForeignKey("exercise.id", ondelete="CASCADE"), nullable=False)
     argv = Column(Text)
+    comment = Column(Text)
     expected_output = Column(Text, nullable=False)
     position = Column(Integer, nullable=False)
 
-    exercise = relationship("Exercise", back_populates="tests")
+    exercise = relationship("ExerciseModel", back_populates="tests")
 
 
-class Hint(Base):
+class HintModel(Base):
     __tablename__ = "hint"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -123,13 +124,13 @@ class Hint(Base):
     body = Column(Text, nullable=False)
     position = Column(Integer, nullable=False)
 
-    exercise = relationship("Exercise", back_populates="hints")
+    exercise = relationship("ExerciseModel", back_populates="hints")
 
 
 
 # Student monitoring 
  
-class SubmissionHistory(Base):
+class SubmissionHistoryModel(Base):
     __tablename__ = "submission_history"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -139,15 +140,15 @@ class SubmissionHistory(Base):
     error_log = Column(Text)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="submission_histories")
+    user = relationship("UserModel", back_populates="submission_histories")
 
     # one way because the original file don't need to know all the attemps of all the student 
-    exercise = relationship("Exercise")
-    submission_markers = relationship("SubmissionMarker", back_populates="submission_history", cascade="all, delete-orphan")
-    submission_results = relationship("SubmissionResult", back_populates="submission_history", cascade="all, delete-orphan")
+    exercise = relationship("ExerciseModel")
+    submission_markers = relationship("SubmissionMarkerModel", back_populates="submission_history", cascade="all, delete-orphan")
+    submission_results = relationship("SubmissionResultModel", back_populates="submission_history", cascade="all, delete-orphan")
 
 
-class SubmissionMarker(Base):
+class SubmissionMarkerModel(Base):
     __tablename__ = "submission_marker"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -157,13 +158,13 @@ class SubmissionMarker(Base):
     content = Column(Text, nullable=False) # La réponse de l'élève
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    submission_history = relationship("SubmissionHistory", back_populates="submission_markers")
+    submission_history = relationship("SubmissionHistoryModel", back_populates="submission_markers")
 
-    original_file = relationship("ExerciseFile")
+    original_file = relationship("ExerciseFileModel")
 
 
 
-class SubmissionResult(Base):
+class SubmissionResultModel(Base):
     __tablename__ = "submission_result"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -172,11 +173,11 @@ class SubmissionResult(Base):
     status = Column(SqlEnum(SubmissionStatus), nullable=False)
     actual_output = Column(Text, nullable=False)
 
-    submission_history = relationship("SubmissionHistory", back_populates="submission_results")
-    test_case = relationship("TestCase")
+    submission_history = relationship("SubmissionHistoryModel", back_populates="submission_results")
+    test_case = relationship("TestCaseModel")
 
 
-class ExerciseProgress(Base):
+class ExerciseProgressModel(Base):
     __tablename__ = "exercise_progress"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -187,5 +188,5 @@ class ExerciseProgress(Base):
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     last_activity = Column(DateTime(timezone=True))
 
-    user = relationship("User", back_populates="exercise_progresses")
-    exercise = relationship("Exercise")
+    user = relationship("UserModel", back_populates="exercise_progresses")
+    exercise = relationship("ExerciseModel")

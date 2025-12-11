@@ -1,12 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, CodeRequest
-from app.services.create_exercise import create_exercise_beta
+from app.services.create_exercise import create_exercise
 from app.services.compiler import compile_and_run_logic, compile_logic
-from app.services.exercise_run import get_exercise_for_student, test_student_code_
-from app.tests.all_db import get_all_db_c
+from app.services.exercise_run import get_exercise_for_student #, test_student_code_
+#from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.db.database import get_db, engine
+from app.db.database import get_db #, engine
+from sqlalchemy.orm import Session 
 from app.db import models
 
 # Create all the table if it's the first time 
@@ -32,21 +33,21 @@ app.add_middleware(
 # Creation exercise 
 
 @app.post("/exercises")
-async def create_exercise_endpoint(exercise_data: ExerciseFullCreate):
+def create_exercise_endpoint(exercise_data: ExerciseFullCreate, db : Session = Depends(get_db)):
     """ Route call after the teacher use the button 'VALIDER'. """
     print(exercise_data)
-    result = await create_exercise_beta(exercise_data)
+    result = create_exercise(exercise_data, db)
     return result
 
 
 @app.post("/run_test")
-async def test_exercise(request: TestRunRequest):
+async def test_exercise_endpoint(request: TestRunRequest):
     """ Route call after the teacher when to test one of his test """
     result = await compile_and_run_logic(request.files,request.language,request.argv)
     return result
 
 @app.post("/compilation")
-async def compilation_teacher_code(request: CompileRequest):
+async def compilation_teacher_code_endpoint(request: CompileRequest):
     print(request)
     """ Route call after the teacher compile his code to test it """
     result = await compile_logic(request.files, request.language) 
@@ -55,18 +56,21 @@ async def compilation_teacher_code(request: CompileRequest):
 
 # Student 
 
-@app.get("/student/exercise/{exercise_id}")
-def get_exercise_student(exercise_id: int):
 
-    exercise = get_exercise_for_student(exercise_id)  
+@app.get("/student/unit/{unit_id}/course/{course_id}/exercise/{exercise_id}")
+def get_exercise_student_endpoint(unit_id : int, course_id: int,  exercise_id: int, db : Session = Depends(get_db)):
+
+    exercise = get_exercise_for_student(unit_id, course_id, exercise_id, db)  
     return exercise
 
+'''
 @app.post("/student/exercise/{exercise_id}/test")
 def test_student_code(exercise_id: int, request: CodeRequest):
 
     test_student_code_(exercise_id, request.files, request.language)
     return
-
+'''
+"""
 # Test
 @app.get("/tests/db")
 def get_all_db_content():
@@ -74,7 +78,7 @@ def get_all_db_content():
     exercises = get_all_db_c()
         
     return exercises
-
+"""
 
 @app.get("/")
 def root():

@@ -7,7 +7,8 @@ class Language(str, Enum):
 
 class Extension(str, Enum):
     C = "c"
-    H = "h" 
+    H = "h"
+    TXT = "txt" 
 
 class Visibility(str, Enum):
     PUBLIC = "public"
@@ -18,7 +19,7 @@ class UserRole(str, Enum):
     TEACHER = "teacher"
 
 class SubmissionStatus(str, Enum):
-    SUCCESS = "sucess"
+    SUCCESS = "success"
     FAILURE = "failure"
 
 class ProgressStatus(str,Enum):
