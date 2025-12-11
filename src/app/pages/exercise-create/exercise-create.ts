@@ -135,6 +135,8 @@ onRunTest(test: Test): void {
       hints: this.hints,
     };
 
+    this.onConsoleMessage(JSON.stringify(payload));
+
     // Send to the back
     this.onConsoleMessage('Envoi de l’exercice au serveur...');
 
@@ -145,10 +147,7 @@ onRunTest(test: Test): void {
         );
       },
       error: (err) => {
-        this.onConsoleMessage(
-          'Erreur lors de la création de l’exercice : ' +
-            (err.message ?? err),
-        );
+        this.onConsoleMessage(err.error.detail);
       },
     });
   }

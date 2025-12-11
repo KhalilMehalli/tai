@@ -8,6 +8,6 @@ export const routes: Routes = [
     { path: 'login', component: Login },
     { path: 'dashboard', component: Dashboard },
     { path: 'exercise-create', component: ExerciseCreate }, 
-    { path: 'exercise-run/:id', component: ExerciseRun },
+    { path: 'unit/:unitId/course/:courseId/exercise/:exerciseId', component: ExerciseRun },
     { path: '', redirectTo: '/exercise-create', pathMatch: 'full' }
 ];

@@ -5,7 +5,6 @@ import { Console } from '../../components/console/console';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
 import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload } from '../../models/exercise.models';
 
-
 @Component({
   selector: 'app-exercise-run',
   imports: [FormsModule, Editor, Console],
@@ -13,8 +12,12 @@ import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload }
   styleUrl: './exercise-run.css',
 })
 export class ExerciseRun {
-  // The ID in the url
-  @Input({ transform: numberAttribute }) id!: number;
+  // The IDs in the url
+  @Input({ transform: numberAttribute }) unitId!: number;
+
+  @Input({ transform: numberAttribute }) courseId!: number;
+
+  @Input({ transform: numberAttribute }) exerciseId!: number;
 
   options : EditorConfig = STUDENT_CONFIG;
   consoleText = '';
@@ -33,12 +36,12 @@ export class ExerciseRun {
   constructor(private exerciseStudentService: ExerciceStudentService){}
 
   ngOnInit(){
-    this.fetchExercise(this.id);
+    this.fetchExercise(this.unitId, this.courseId, this.exerciseId);
   }
 
    
-  private fetchExercise(id: number): void {
-    this.exerciseStudentService.getExerciseForStudent(id).subscribe({
+  private fetchExercise(UnitId: number, CourseId: number, ExerciseId: number): void {
+    this.exerciseStudentService.getExerciseForStudent(UnitId, CourseId, ExerciseId).subscribe({
       next: (res) => {
         this.consoleText = JSON.stringify(res);
         this.exerciseData = res.data;
@@ -51,7 +54,9 @@ export class ExerciseRun {
 
       },
       error: (err) => {
-        this.consoleText = JSON.stringify(err.error.detail);
+        console.log('HTTP error complet :', err);
+      console.log('err.error :', err.error);
+        this.onConsoleMessage(err.error.detail);
       },
     });
   }
@@ -76,7 +81,7 @@ export class ExerciseRun {
     };
 
     this.consoleText = JSON.stringify(payload);
-    this.exerciseStudentService.sendExerciseStudent(this.id,payload).subscribe({
+    this.exerciseStudentService.sendExerciseStudent(this.exerciseId,payload).subscribe({
       next: (res) => {
         this.consoleText = JSON.stringify(res);
 

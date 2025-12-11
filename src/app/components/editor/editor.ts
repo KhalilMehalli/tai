@@ -38,7 +38,8 @@ export class Editor {
   // Similar to a constructor, but runs whenever inputs change
   ngOnChanges(changes: SimpleChanges): void {
     // If the editor receives files, display them
-    if (changes['inputFiles'] && this.inputFiles) {
+    if (changes['inputFiles'] && this.inputFiles.length > 0) {
+      console.log(this.inputFiles);
        this.rebuildFilesFromInput();
     }
     // Only allow the teacher to have an open file when creating a new exercise,

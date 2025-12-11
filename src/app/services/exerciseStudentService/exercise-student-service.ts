@@ -10,16 +10,17 @@ import { environment } from '../../../environments/environment.development'; // 
   providedIn: 'root',
 })
 export class ExerciceStudentService {
-  private API_STUDENT_EXERCISE = `${environment.apiUrl}student/exercise/`;
   
   constructor(private http: HttpClient) {}
 
-  getExerciseForStudent(ExerciseId: number): Observable<ApiResponse<Exercise>> {
-    return this.http.get<ApiResponse<Exercise>>(`${this.API_STUDENT_EXERCISE}${ExerciseId}`);
+  getExerciseForStudent(UnitId: number, CourseId: number, ExerciseId: number): Observable<ApiResponse<Exercise>> {
+    return this.http.get<ApiResponse<Exercise>>(`${environment.apiUrl}student/unit/${UnitId}/course/${CourseId}/exercise/${ExerciseId}`);
   }
 
+  
   sendExerciseStudent(ExerciseId: number, payload: CodePayload): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(`${this.API_STUDENT_EXERCISE}${ExerciseId}/test`, payload);
+    return this.http.post<ApiResponse<any>>(`${environment.apiUrl}student`, payload);
   }
+    
 
 }
