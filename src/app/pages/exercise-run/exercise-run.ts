@@ -2,12 +2,13 @@ import { Component, Input, numberAttribute, OnInit} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
+import { TestsDisplay } from '../../components/testsDisplay/tests-display/tests-display';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
-import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload } from '../../models/exercise.models';
+import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload, TestDisplay } from '../../models/exercise.models';
 
 @Component({
   selector: 'app-exercise-run',
-  imports: [FormsModule, Editor, Console],
+  imports: [FormsModule, Editor, Console, TestsDisplay],
   templateUrl: './exercise-run.html',
   styleUrl: './exercise-run.css',
 })
@@ -24,14 +25,13 @@ export class ExerciseRun {
 
   exerciseData!: Exercise; 
   files : File[] = [];
-  tests: Test[] = [];  
+  tests: TestDisplay[] = [];  
   hints: Hint[] = [];
-
-
 
   description: string = "";
   language: string = "";
 
+  activeTab: string = 'tests';
 
   constructor(private exerciseStudentService: ExerciceStudentService){}
 
@@ -43,10 +43,20 @@ export class ExerciseRun {
   private fetchExercise(UnitId: number, CourseId: number, ExerciseId: number): void {
     this.exerciseStudentService.getExerciseForStudent(UnitId, CourseId, ExerciseId).subscribe({
       next: (res) => {
-        this.consoleText = JSON.stringify(res);
+        this.onConsoleMessage(JSON.stringify(res));
         this.exerciseData = res.data;
         this.files = this.exerciseData.files;
-        this.tests = this.exerciseData.tests;
+
+        this.tests = this.exerciseData.tests.map(t => ({
+              id: t.id,
+              argv: t.argv,
+              expected_output: t.expected_output,
+              comment: t.comment,
+              actualOutput: undefined, 
+              status: 'pending',
+              position: t.position
+           }));
+
         this.hints = this.exerciseData.hints;
         this.description = this.exerciseData.description;
         console.log(this.files[0].id)
@@ -74,20 +84,25 @@ export class ExerciseRun {
     console.log(files);
   }
 
+  // Change the tab between console, tests and hints tab
+  setActiveTab(tab: string) {
+    this.activeTab = tab;
+  }
+
   OnStudentSend(): void { // Send the student file to the back 
     const payload : CodePayload = {
       files: this.files,
       language: this.exerciseData.language
     };
 
-    this.consoleText = JSON.stringify(payload);
+    this.onConsoleMessage(JSON.stringify(payload));
     this.exerciseStudentService.sendExerciseStudent(this.exerciseId,payload).subscribe({
       next: (res) => {
-        this.consoleText = JSON.stringify(res);
+        this.onConsoleMessage(JSON.stringify(res));
 
       },
       error: (err) => {
-        this.consoleText = JSON.stringify(err.error.detail);
+        this.onConsoleMessage(JSON.stringify(err.error.detail));
       },
     });
   }

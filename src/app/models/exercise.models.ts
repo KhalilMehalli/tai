@@ -49,7 +49,7 @@ export interface TestRunPayload extends CodePayload{
 }
 
 
-//
+// Respond from the back
 
 export interface ApiResponse<T> {
   status: boolean;
@@ -62,6 +62,11 @@ export interface RunResponse {
   stderr: string;
   exit_code: number;
 }
+
+export interface TestDisplay extends Test {
+  actualOutput?: string;  // Student output
+  status: 'pending' | 'success' | 'failure'; 
+} 
 
 // EDITOR CONFIGURATION 
 

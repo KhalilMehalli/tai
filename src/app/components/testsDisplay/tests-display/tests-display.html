@@ -1,0 +1,76 @@
+<div class="h-full w-full overflow-y-auto overflow-x-auto bg-gray-900 p-4">
+
+    <!--If no test available-->
+    @if (!tests || tests.length === 0) {
+    <div class="flex h-full flex-col items-center justify-center space-y-3 text-white">
+        <span class="text-sm">Aucun test disponible.</span>
+    </div>
+    } 
+
+    @else {
+    <div class="min-w-[500px] flex flex-col gap-2">
+        
+        <div class="grid grid-cols-12 gap-4 items-center rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-300 shadow-md whitespace-nowrap">
+        <div class="col-span-1 text-center">#</div>
+        <div class="col-span-3">Arguments</div>
+        <div class="col-span-3">Attendu</div>
+        <div class="col-span-3">Élève</div>
+        <div class="col-span-2 text-center">État</div>
+        </div>
+
+        @for (test of tests; track test.id) {
+        <div class="grid grid-cols-12 gap-4 items-center rounded-lg border border-gray-800 bg-gray-800/40 px-4 py-3 text-sm ">
+            
+            <div class="col-span-1 flex justify-center">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs font-bold text-white">
+                {{ test.position + 1 }}
+            </span>
+            </div>
+
+            <div class="col-span-3 font-mono text-white truncate" title="{{ test.argv }}">
+            {{ test.argv || '(Aucun)' }}
+            </div>
+
+            <div class="col-span-3 font-mono text-emerald-400 truncate" title="{{ test.expected_output }}">
+            {{ test.expected_output }}
+            </div>
+
+            <div class="col-span-3 font-mono truncate" [title]="test.actualOutput">
+            @if ( test.status === 'pending') {
+                <span class="text-white  text-xs">...</span>
+            } @else {
+                <span [class.text-red-400]="test.status === 'failure'" 
+                    [class.text-emerald-400]="test.status === 'success'">
+                {{ test.actualOutput }}
+                </span>
+            }
+            </div>
+
+            <div class="col-span-2 flex justify-center">
+            @switch (test.status) {
+                @case ('success') {
+                <div class="flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-1 text-xs font-medium text-emerald-400 border border-emerald-400/20 whitespace-nowrap">
+                    <div class="h-1.5 w-1.5 rounded-full bg-emerald-400 "></div>
+                    Succès
+                </div>
+                }
+                @case ('failure') {
+                <div class="flex items-center gap-1.5 rounded-full bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 border border-red-400/20 whitespace-nowrap">
+                    <div class="h-1.5 w-1.5 rounded-full bg-red-400 "></div>
+                    Échec
+                </div>
+                }
+                @default {
+                    <div class="flex items-center gap-1.5 rounded-full bg-gray-700/50 px-2 py-1 text-xs font-medium text-gray-400 border border-gray-700 whitespace-nowrap">
+                    <div class="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                    Attente
+                </div>
+                }
+            }
+            </div>
+
+        </div>
+        }
+    </div>
+    }
+</div>

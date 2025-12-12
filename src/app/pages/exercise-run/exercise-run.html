@@ -1,14 +1,14 @@
-<div class="flex h-full w-full p-6 gap-6 bg-gray-800">
+<div class="flex min-h-screen w-full p-6 gap-6 bg-gray-800">
 
     <!-- Left panel  -->
-    <div class="w-1/4 h-full bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
+    <div class="w-1/4 bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
 
       
 
-        </div>
+    </div>
 
     <!-- Right panel  -->
-    <div class="w-3/4 bg-white rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">
+    <div class="w-3/4 bg-white rounded-3xl p-6 flex flex-col gap-2">
 
         <div class="flex-1 min-h-0">
           <textarea id="description" placeholder="Description" class="w-full h-full border border-gray-300 rounded-xl p-3 
@@ -27,13 +27,73 @@
             ></app-editor>
         </div>
 
-        <div class="flex-[2_1] min-h-0 overflow-hidden" >        
-            <app-console
-                [text]="consoleText"
-            ></app-console>
-        </div>
+    
 
 
+
+
+
+    <div class="flex-[2_1] min-h-0 flex flex-col overflow-hidden rounded-xl" >      
+        <div class="flex border-t-xl  bg-gray-800">
+        
+            <button 
+                (click)="setActiveTab('console')"
+                class="flex-1 py-2 text-sm font-semibold"
+                [class.border-white]="activeTab === 'console'"
+                [class.text-white]="activeTab === 'console'"
+                [class.border-transparent]="activeTab !== 'console'"
+                [class.text-gray-400]="activeTab !== 'console'"
+            >
+                Console
+            </button>
+
+            <button 
+                (click)="setActiveTab('tests')"
+                class="flex-1 py-2 text-sm font-semibold"
+                [class.border-white]="activeTab === 'tests'"
+                [class.text-white]="activeTab === 'tests'"
+                [class.border-transparent]="activeTab !== 'tests'"
+                [class.text-gray-400]="activeTab !== 'tests'"            
+            >
+                Tests
+            </button>
+
+            <button 
+                (click)="setActiveTab('hints')"
+                class="flex-1 py-2 text-sm font-semibold "
+                [class.border-white]="activeTab === 'hints'"
+                [class.text-white]="activeTab === 'hints'"
+                [class.border-transparent]="activeTab !== 'hints'"
+                [class.text-gray-400]="activeTab !== 'hints'"
+            >
+                Indices
+            </button>
+        </div>  
+
+        <div class="flex-1 min-h-0 overflow-auto relative">
+
+        @switch (activeTab) {
+            
+            @case ('console') {
+                <app-console 
+                    [text]="consoleText"
+                ></app-console>
+            }
+
+            @case ('tests') {
+                <app-tests-display
+                    [tests]="tests"
+                ></app-tests-display>
+            }
+
+            @case ('hints') {
+                <div class="p-4 text-black">
+                    <p>Hints</p>
+                    </div>
+            }
+        }
+
+    </div>
 
 
 </div>
