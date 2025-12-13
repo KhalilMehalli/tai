@@ -1,1 +1,62 @@
-<p>hints-display works!</p>
+<div class="h-full w-full overflow-y-auto overflow-x-auto bg-gray-900 p-4">
+
+  @if (!displayHints || displayHints.length === 0) {
+    <div class="flex h-full flex-col items-center justify-center space-y-3 text-white">
+      <span class="text-sm">Aucun indice disponible.</span>
+    </div>
+  } 
+
+  @else {
+    <div class="min-w-[500px] flex flex-col gap-2">
+      
+      <div class="grid grid-cols-12 gap-4 items-center rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-300 shadow-md whitespace-nowrap">
+        <div class="col-span-1 text-center">#</div>
+        <div class="col-span-11">Indice</div>
+      </div>
+
+      @for (hint of displayHints; track hint.id) {
+        
+        @let remaining = getRemainingAttempts(hint.unlock_after_attempts);
+        @let isLocked = remaining > 0;
+
+        <div class="grid grid-cols-12 gap-4 items-center rounded-lg border border-gray-800 bg-gray-800/40 px-4 py-3 text-sm">
+          
+          <div class="col-span-1 flex justify-center">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs font-bold text-white">
+              {{ hint.position + 1 }}
+            </span>
+          </div>
+
+          <div class="col-span-11">
+            
+            @if (hint.isRevealed) {
+              <div class="font-mono text-white whitespace-pre-wrap leading-relaxed">
+                {{hint.body }}
+              </div>
+            }
+
+            @else {
+              <div class="flex justify-start">
+                
+                @if (isLocked) {
+                  <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800/50 text-white text-xs opacity-70">
+                    <span>Disponible dans {{ remaining }} tentative{{ remaining > 1 ? 's' : '' }}</span>
+                  </div>
+                } 
+                
+                @else {
+                  <button (click)="revealHint(hint)"
+                    class="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700 text-white hover:bg-gray-600 text-xs ">
+                    <span>Révéler l'indice</span>
+                  </button>
+                }
+
+              </div>
+            }
+          </div>
+
+        </div>
+      }
+    </div>
+  }
+</div>

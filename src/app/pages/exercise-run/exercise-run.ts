@@ -1,14 +1,15 @@
-import { Component, Input, numberAttribute, OnInit} from '@angular/core';
+import { afterEveryRender, Component, Input, numberAttribute, OnInit} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
 import { TestsDisplay } from '../../components/testsDisplay/tests-display/tests-display';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
 import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, CodePayload, TestDisplay } from '../../models/exercise.models';
+import { HintsDisplay } from '../../components/hintsDisplay/hints-display/hints-display';
 
 @Component({
   selector: 'app-exercise-run',
-  imports: [FormsModule, Editor, Console, TestsDisplay],
+  imports: [FormsModule, Editor, Console, TestsDisplay, HintsDisplay],
   templateUrl: './exercise-run.html',
   styleUrl: './exercise-run.css',
 })
@@ -25,13 +26,14 @@ export class ExerciseRun {
 
   exerciseData!: Exercise; 
   files : File[] = [];
-  tests: TestDisplay[] = [];  
+  tests: Test[] = [];  
   hints: Hint[] = [];
 
   description: string = "";
   language: string = "";
 
-  activeTab: string = 'tests';
+  activeTab: string = 'hints';
+  attemptsCount = 0;
 
   constructor(private exerciseStudentService: ExerciceStudentService){}
 
@@ -46,16 +48,7 @@ export class ExerciseRun {
         this.onConsoleMessage(JSON.stringify(res));
         this.exerciseData = res.data;
         this.files = this.exerciseData.files;
-
-        this.tests = this.exerciseData.tests.map(t => ({
-              id: t.id,
-              argv: t.argv,
-              expected_output: t.expected_output,
-              comment: t.comment,
-              actualOutput: undefined, 
-              status: 'pending',
-              position: t.position
-           }));
+        this.tests = this.exerciseData.tests;
 
         this.hints = this.exerciseData.hints;
         this.description = this.exerciseData.description;
@@ -95,6 +88,9 @@ export class ExerciseRun {
       language: this.exerciseData.language
     };
 
+    this.attemptsCount++;
+    /*
+
     this.onConsoleMessage(JSON.stringify(payload));
     this.exerciseStudentService.sendExerciseStudent(this.exerciseId,payload).subscribe({
       next: (res) => {
@@ -105,5 +101,6 @@ export class ExerciseRun {
         this.onConsoleMessage(JSON.stringify(err.error.detail));
       },
     });
+    */
   }
 }

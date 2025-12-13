@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import type { TestDisplay } from '../../../models/exercise.models';
+import { Component, Input, SimpleChanges } from '@angular/core';
+import type { TestDisplay, Test } from '../../../models/exercise.models';
 
 @Component({
   selector: 'app-tests-display',
@@ -9,5 +9,23 @@ import type { TestDisplay } from '../../../models/exercise.models';
 })
 export class TestsDisplay {
 
-  @Input() tests: TestDisplay[] = [];
+  @Input() tests: Test[] = [];
+
+  testsDisplay : TestDisplay[] = [];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // When the back will send the tests, this component will convert it from Tests type to TestDisplay
+    if (changes['tests'] && this.tests) {
+      this.testsDisplay = this.tests.map(t => ({
+              id: t.id,
+              argv: t.argv,
+              expected_output: t.expected_output,
+              comment: t.comment,
+              actualOutput: undefined, 
+              status: 'pending',
+              position: t.position
+           }));
+    }
+  }
+
 }

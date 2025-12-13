@@ -87,9 +87,10 @@
             }
 
             @case ('hints') {
-                <div class="p-4 text-black">
-                    <p>Hints</p>
-                    </div>
+                <app-hints-display
+                    [hints]="hints"
+                    [attemptsCount]="attemptsCount">
+                </app-hints-display>
             }
         }
 

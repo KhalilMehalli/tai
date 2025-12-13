@@ -6,6 +6,10 @@ export interface Hint{
   position: number;
 }
 
+export interface HintDisplay extends Hint {
+  isRevealed: boolean; 
+}
+
 export interface Test {
   id ?: number;
   argv: string;
@@ -13,6 +17,11 @@ export interface Test {
   comment: string;
   position: number;
 }
+
+export interface TestDisplay extends Test {
+  actualOutput?: string;  // Student output
+  status: 'pending' | 'success' | 'failure'; 
+} 
 
 export interface File {
   id ?: number;
@@ -63,10 +72,6 @@ export interface RunResponse {
   exit_code: number;
 }
 
-export interface TestDisplay extends Test {
-  actualOutput?: string;  // Student output
-  status: 'pending' | 'success' | 'failure'; 
-} 
 
 // EDITOR CONFIGURATION 
 
