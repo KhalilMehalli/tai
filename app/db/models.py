@@ -137,7 +137,6 @@ class SubmissionHistoryModel(Base):
     user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     exercise_id = Column(Integer, ForeignKey("exercise.id", ondelete="CASCADE"), nullable=False)
     status = Column(SqlEnum(SubmissionStatus), nullable=False)
-    error_log = Column(Text)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("UserModel", back_populates="submission_histories")
@@ -171,6 +170,7 @@ class SubmissionResultModel(Base):
     submission_id = Column(Integer, ForeignKey("submission_history.id", ondelete="CASCADE"), nullable=False)
     test_case_id = Column(Integer, ForeignKey("test_case.id", ondelete="CASCADE"), nullable=False)
     status = Column(SqlEnum(SubmissionStatus), nullable=False)
+    error_log = Column(Text, nullable=True)
     actual_output = Column(Text, nullable=False)
 
     submission_history = relationship("SubmissionHistoryModel", back_populates="submission_results")
@@ -186,7 +186,21 @@ class ExerciseProgressModel(Base):
     status = Column(SqlEnum(ProgressStatus), default=ProgressStatus.NOT_STARTED, nullable=False)
     attempts_count = Column(Integer, default=0)
     started_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_activity = Column(DateTime(timezone=True))
+    last_activity = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("UserModel", back_populates="exercise_progresses")
     exercise = relationship("ExerciseModel")
+
+
+class HintViewModel(Base):
+    __tablename__ = "hint_view"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    hint_id = Column(Integer, ForeignKey("hint.id", ondelete="CASCADE"), nullable=False)
+    viewed_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    hint = relationship("HintModel")
+    user = relationship("UserModel")
+
+

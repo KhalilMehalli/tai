@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List
-from app.core.enums import Extension, Language, Visibility
+from app.core.enums import Extension, Language, Visibility, TestStatus
 
 
 # The composition of an exercise 
@@ -24,6 +24,14 @@ class TestCaseCreate(BaseModel):
 
 class Test(TestCaseCreate):
     id: int
+
+class TestResult(BaseModel):
+    id: int
+    status: TestStatus
+    actual_output: str
+    error_log : str
+    
+
 
 class HintCreate(BaseModel):
     body: str
@@ -86,9 +94,12 @@ class TestRunRequest(CompileRequest):
     argv: str 
 
 
-# Type for student
+# Payload front will send when student test his code
 
-class CodeRequest(BaseModel):
-    files: List[File]
+class StudentSubmissionPayload(BaseModel):
+    user_id: int
     language: Language
+    files: List[File]
+
+
 

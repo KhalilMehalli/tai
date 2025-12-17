@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends
-from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, CodeRequest
+from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, StudentSubmissionPayload
 from app.services.create_exercise import create_exercise
 from app.services.compiler import compile_and_run_logic, compile_logic
-from app.services.exercise_run import get_exercise_for_student #, test_student_code_
+from app.services.exercise_run import get_exercise_for_student, test_student_code
 #from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -18,7 +18,8 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173", 
-    "http://127.0.0.1:4200"
+    "http://127.0.0.1:4200", 
+    "http://localhost:4200"
 ]
 
 app.add_middleware(
@@ -63,13 +64,14 @@ def get_exercise_student_endpoint(unit_id : int, course_id: int,  exercise_id: i
     exercise = get_exercise_for_student(unit_id, course_id, exercise_id, db)  
     return exercise
 
-'''
-@app.post("/student/exercise/{exercise_id}/test")
-def test_student_code(exercise_id: int, request: CodeRequest):
 
-    test_student_code_(exercise_id, request.files, request.language)
-    return
-'''
+@app.post("/student/unit/{unit_id}/course/{course_id}/exercise/{exercise_id}")
+async def test_student_code_endpoint(exercise_id : int, payload: StudentSubmissionPayload,  db : Session = Depends(get_db)):
+
+    results = await test_student_code(db, exercise_id, payload)
+
+    return results
+
 """
 # Test
 @app.get("/tests/db")

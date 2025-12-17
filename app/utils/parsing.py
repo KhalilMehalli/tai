@@ -98,7 +98,7 @@ def inject_markers_into_template(template_content: str, markers: List[MarkerData
 
     comment = COMMENT_SYMBOLS.get(extension)
 
-    # List -> Dict
+    # List -> Dict, faster to find the content of the markers with the id
     marker_map = {str(m.id): m.content for m in markers}
 
     pattern = rf'{comment} TODO: (?P<id>.*)\n\n\s*{comment} END TODO: (?P=id)'

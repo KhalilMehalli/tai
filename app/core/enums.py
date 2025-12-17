@@ -21,8 +21,13 @@ class UserRole(str, Enum):
 class SubmissionStatus(str, Enum):
     SUCCESS = "success"
     FAILURE = "failure"
+    PENDING = "pending"
 
 class ProgressStatus(str,Enum):
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     VALIDATED = "validated"
+
+class TestStatus(str, Enum):
+    SUCCESS = "success"
+    FAILURE = "failure"
