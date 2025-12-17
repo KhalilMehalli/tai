@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, selectinload, joinedload
-from typing import List
+from typing import List, Tuple
 from datetime import datetime
 
 from app.db.models import ExerciseModel, ExerciseFileModel, TestCaseModel, HintModel, CourseModel, UnitModel, SubmissionHistoryModel, SubmissionMarkerModel, SubmissionResultModel, ExerciseProgressModel
@@ -9,6 +9,51 @@ from app.core.enums import Visibility, SubmissionStatus, ProgressStatus, Languag
 
 from app.utils.parsing import extract_student_solutions, inject_markers_into_template, MarkerData
 from app.services.compiler import compile_and_run_logics
+
+# ---------------- Shared helper for both get_exercise_for_student and test_student_code function -----#
+def get_secure_exercise_or_404(db: Session, exercise_id: int) -> ExerciseModel:
+    """
+    Fetches the exercise with all necessary relationships loaded.
+    Raises 404 if not found or 403 if private (and user has no access).
+    """
+
+    exercise = (
+        db.query(ExerciseModel)
+        .options(
+            # selectinload loads the kids of Exercise (files, hint, tests) in the same requestfor better performance
+            selectinload(ExerciseModel.files),
+            selectinload(ExerciseModel.tests),
+            selectinload(ExerciseModel.hints),
+
+            #joinedload better for many to one relationship
+            joinedload(ExerciseModel.course).joinedload(CourseModel.unit)
+        )
+        .filter(ExerciseModel.id == exercise_id)
+        .first()
+    )
+
+    if not exercise:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercice introuvable"
+        )
+
+    is_private = (
+        exercise.visibility == Visibility.PRIVATE or 
+        exercise.course.visibility == Visibility.PRIVATE or 
+        exercise.course.unit.visibility == Visibility.PRIVATE
+    )
+
+    if is_private:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Exercice, Cours ou Module privé"
+        )
+
+    return exercise
+
+
+# ------------ Helper for get_exercise_for_student function --------------------- #
 
 def format_files_for_student(sql_files: List[ExerciseFileModel]) -> List[File]:
     """Transforms the files received from the DB (ExerciseFileModel) into Pydantic types (File)."""
@@ -68,43 +113,8 @@ def get_exercise_for_student(unit_id: int, course_id: int, exercise_id: int, db:
     Retrieves a complete exercise for a student, verifying visibility.
     """
 
-    # .options(selectinload(...)) loads the kids of Exercise (files, hint, tests) in the same requestfor better performance
-    exercise = (
-        db.query(ExerciseModel)
-        .join(CourseModel) # join with course_id
-        .join(UnitModel)   # join with unit_id
-        .filter(
-            UnitModel.id == unit_id,
-            CourseModel.id == course_id,
-            ExerciseModel.id == exercise_id, 
-        ) # Find the good exercise and check if it's public
-        .options(
-            #selectinload better for one to many relationship 
-            selectinload(ExerciseModel.files),
-            selectinload(ExerciseModel.tests),
-            selectinload(ExerciseModel.hints),
-
-            #joinedload better for many to one relationship
-            joinedload(ExerciseModel.course).joinedload(CourseModel.unit)
-        )
-        .first()
-    )
-
-
-    if not exercise:
-        print("pas trouvé")
-        # If the exercise don't exist 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercice introuvable (Module {unit_id}, Cours {course_id}, Exo {exercise_id})"
-        )
-
-    if exercise.visibility == Visibility.PRIVATE or exercise.course.visibility == Visibility.PRIVATE or exercise.course.unit.visibility == Visibility.PRIVATE:
-        # If is private
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Exercice, Cours ou Module privé (Module {unit_id}, Cours {course_id}, Exo {exercise_id})"
-        )
+    
+    exercise = get_secure_exercise_or_404(db, exercise_id)
 
     
     exercise_detail = ExerciseFull(
@@ -131,126 +141,164 @@ def get_exercise_for_student(unit_id: int, course_id: int, exercise_id: int, db:
     }
 
 
+# ------------ Helper for test_student_code function --------------------- #
 
+def initialize_submission_history(db: Session, user_id: int, exercise_id: int) -> SubmissionHistoryModel:
+    """Creates a pending submission entry and returns its ID."""
+    submission = SubmissionHistoryModel(
+        user_id=user_id,
+        exercise_id=exercise_id,
+        status=SubmissionStatus.PENDING 
+    )
+    db.add(submission)
+    # Flush sends the SQL to generate the ID but keeps the transaction open
+    # Unlike commit which write data permanently, flush allows us to still use db.rollback
+    # if an error occurs later.
+    
+    db.flush() 
+    return submission
+
+def update_student_progress(db: Session, user_id: int, exercise_id: int, is_success: bool):
+    """Updates or creates the progress entry for the student."""
+
+    progress = db.query(ExerciseProgressModel).filter_by(
+        user_id=user_id, 
+        exercise_id=exercise_id
+    ).first()
+
+    if not progress:
+        progress = ExerciseProgressModel(
+            user_id=user_id, 
+            exercise_id=exercise_id,
+            status=ProgressStatus.IN_PROGRESS, 
+            attempts_count=0
+        )
+        db.add(progress)
+    
+    progress.attempts_count += 1
+    progress.last_activity = datetime.now()
+
+    if is_success:
+        progress.status = ProgressStatus.VALIDATED
+
+def process_and_save_markers(db: Session, submission_id: int, payload_files: List[File]) -> List[MarkerData]:
+    """Extracts student markers and saves them to the DB."""
+    all_markers: List[MarkerData] = []
+
+    for student_file in payload_files:
+        markers = extract_student_solutions(student_file.content, student_file.extension)
+        all_markers.extend(markers)
+
+        for m in markers:
+            db.add(SubmissionMarkerModel(
+                submission_id=submission_id,
+                exercise_file_id=student_file.id,
+                marker_id=m.id,
+                content=m.content
+            ))
+    return all_markers
+
+def reconstruct_files_for_compilation(exercise_files: List[ExerciseFileModel], student_markers: List[MarkerData]) -> List[File]:
+    """Merges student markers into teacher templates."""
+    files_to_compile: List[File] = []
+
+    for tf in exercise_files:
+        if tf.is_main or not tf.editable:
+            # Main and non editable files don't have markers (normally), keep original content.
+            final_content = tf.template_without_marker
+        else:
+            # Inject student code into the template.
+            final_content = inject_markers_into_template(
+                tf.template_without_marker, 
+                student_markers, 
+                tf.extension
+            )
+        
+        # Filling all fields of File for compilation isn't optimal, I know. Temporary solution (If I don't forget).
+        files_to_compile.append(File(
+            id=tf.id,
+            name=tf.name,
+            content=final_content,
+            extension=tf.extension,
+            is_main=tf.is_main,
+            editable=tf.editable,
+            position=tf.position
+        ))
+    
+    return files_to_compile
+
+def grade_submisison(db: Session, submission_id: int, exec_results: List[dict], tests: List[TestCaseModel]) -> Tuple[bool, List[TestResult]]:
+    """
+    Compares execution results with expected outputs, saves results to DB, 
+    and returns global success status + list of users output for frontend.
+    """
+    test_responses_list : List[TestResult] = []
+    global_success = True
+
+    for i, result in enumerate(exec_results):
+        test_case = tests[i]
+        
+        print("test result", result)
+        # Data cleaning and extraction
+        student_output = (result["data"]["stdout"] or "").strip()
+        expected_output = (test_case.expected_output or "").strip()
+        error_log = result["data"]["stderr"]
+        exit_code = result["data"]["exit_code"]
+
+        # Verdict Logic
+        is_success = (exit_code == 0) and (student_output == expected_output)
+        
+        if not is_success:
+            global_success = False
+
+        # Save to DB
+        db.add(SubmissionResultModel(
+            submission_id=submission_id,
+            test_case_id=test_case.id,
+            status=SubmissionStatus.SUCCESS if is_success else SubmissionStatus.FAILURE,
+            actual_output=student_output,
+            error_log=error_log
+        ))
+
+        # Prepare Frontend Response
+        test_responses_list.append(TestResult(
+            id=test_case.id,
+            status=TestStatus.SUCCESS if is_success else TestStatus.FAILURE,
+            actual_output=student_output,
+            error_log=error_log
+        ))
+    
+    return global_success, test_responses_list
 
 async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmissionPayload):
+    """
+    Pipeline for testing student code.
+    Steps: Security(Exercise exist and exercise not private) -> Init submission_history -> Parse/Save student solution 
+    -> Reconstruct files -> Compile/Run -> Grade/Saving the answer of the student.
+    """
 
-    exercise = (
-        db.query(ExerciseModel)
-        .options(
-            # Do the loading of the files and tests now to not do it later
-            selectinload(ExerciseModel.files),
-            selectinload(ExerciseModel.tests),
+    # Security (Outside try/except because it return a HTTPExceptions for error)
+    exercise = get_secure_exercise_or_404(db, exercise_id)
 
-            # To check the visibility of this exercise
-            joinedload(ExerciseModel.course).joinedload(CourseModel.unit)
-        )
-        .filter(ExerciseModel.id == exercise_id)
-        .first()
-    )
-
-    # Security 
-
-    if not exercise:
-        print("pas trouvé")
-        # If the exercise don't exist 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercice introuvable"
-        )
-
-    if exercise.visibility == Visibility.PRIVATE or exercise.course.visibility == Visibility.PRIVATE or exercise.course.unit.visibility == Visibility.PRIVATE:
-        # If is private
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Exercice, Cours ou Module privé"
-        )
-
-
-    # Initialization 
-
-    # Creating a new line for this submission
-    submission = SubmissionHistoryModel(
-            user_id=payload.user_id,
-            exercise_id=exercise_id,
-            status=SubmissionStatus.PENDING 
-        )
-    db.add(submission)
-
-    # Flush it to have the id of the submission
-    # Flush is different to commit, commit write the data in hard but flush not, 
-    # Flush send the request, but the data is not written permenatly yet, I can stil use db.rollback
-    try:
-        db.flush() 
-        submission_id = submission.id
-    except Exception as e:
-        print(str(e))
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Une erreur inattendue est survenue : {str(e)}"
-        )
-    
-    # Treatement 
     try: 
+        #Initialization 
+        submission = initialize_submission_history(db, payload.user_id, exercise_id)
+        submission_id = submission.id
+
         # Parsing and save the student solution
-
-        all_student_markers: List[MarkerData] = []
-
-        for student_file in payload.files:
-            # 'extract_student_solutions' return all the markers in this file
-            markers = extract_student_solutions(student_file.content, student_file.extension)
-            
-            all_student_markers.extend(markers)
-
-            # Save in the db
-            for m in markers:
-                db.add(SubmissionMarkerModel(
-                    submission_id=submission_id,
-                    exercise_file_id=student_file.id,
-                    marker_id=m.id,
-                    content=m.content
-                ))
+        all_student_markers: List[MarkerData] = process_and_save_markers(db, submission_id, payload.files)
 
         # Reconstruction files (student markers + teacher template)
-
+        # We use exercise.files directly (loaded via selectinload)
         print("Student  Markers ", all_student_markers)
         teacher_files : List[ExerciseFileModel] = exercise.files
-
-        files_to_compile : List[File] = []
-
-        for tf in teacher_files:
-            if tf.is_main or not tf.editable:
-                # Main and no editable file don't have markers (normally), don't need to check them
-                final_content = tf.template_without_marker
-            else:
-                # Inject student code
-                final_content = inject_markers_into_template(
-                    tf.template_without_marker, 
-                    all_student_markers, 
-                    tf.extension
-                )
-            
-            # Complete all the champ for the compilation is not optimal, I know. Temporary solution.
-            reconstructed_file = File(
-                id=tf.id,
-                name=tf.name,
-                content=final_content,
-                extension=tf.extension,
-                is_main=tf.is_main,
-                editable=tf.editable,
-                position=tf.position
-            )
-
-            files_to_compile.append(reconstructed_file)
+        files_to_compile : List[File] = reconstruct_files_for_compilation(teacher_files, all_student_markers)
         
         # Compilation 
-
         print("File rebuilt ", files_to_compile)
-
-        tests : List[TestCaseModel] = exercise.tests
-
-        argvs : List[str] = [t.argv if t.argv else "" for t in tests]
+        # sort the tests to ensure the test are in the right order
+        sorted_tests : List[TestCaseModel] = sorted(exercise.tests, key=lambda t: t.position)
+        argvs : List[str] = [t.argv if t.argv else "" for t in sorted_tests]
 
         # Compile and execute all the test
         exec_results = await compile_and_run_logics(
@@ -258,84 +306,25 @@ async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmi
                     payload.language, 
                     argvs
                 )
-        
 
-        # Check if the program compile
+        # Check for compilation failure
         # compile_and_run_logics return a dictionnary if the compilation didn't work {status, message, data}
         if isinstance(exec_results, dict) and not exec_results.get("status", True):
-             # The student fail this submission
              submission.status = SubmissionStatus.FAILURE
-             # Commit the data
-             db.commit() 
-             
-             return exec_results
+             db.commit()    
+             print("Error compile", exec_results)
+             return exec_results # returns the error dict directly
         
-        # Grading 
-
         print("Result ", exec_results)
 
-        test_responses_list = []
-        global_success = True
-    
-        # Loop in all the results 
-        for i, result in enumerate(exec_results):
-            test_case = tests[i]
-            
-            # Strip the output to compare them 
-            student_output = (result["data"]["stdout"] or "").strip()
-            expected_output = (test_case.expected_output or "").strip()
-            error_log = result["data"]["stderr"]
-            exit_code = result["data"]["exit_code"]
-
-            # Vérification : Exit code 0 ET sortie identique
-            is_success = (exit_code == 0) and (student_output == expected_output)
-            
-            if not is_success:
-                global_success = False
-
-            # Save the result in the db 
-            db.add(SubmissionResultModel(
-                submission_id=submission_id,
-                test_case_id=test_case.id,
-                status=SubmissionStatus.SUCCESS if is_success else SubmissionStatus.FAILURE,
-                actual_output=student_output,
-                error_log=error_log
-            ))
-
-            # Creating the respond for the front
-            test_responses_list.append(TestResult(
-                id= test_case.id,
-                status= TestStatus.SUCCESS if is_success else  TestStatus.FAILURE,
-                actual_output= student_output,
-                error_log = error_log
-                
-            ))
+        # Grading 
+        global_success, test_responses_list = grade_submisison(db, submission_id, exec_results, sorted_tests)
         
-        # Progression and finalisation of the submisison
-
         # Ubdate the status of the submission
         submission.status = SubmissionStatus.SUCCESS if global_success else SubmissionStatus.FAILURE
 
         # Update the progression for this exercice, if it don't exist, create it 
-        progress = db.query(ExerciseProgressModel).filter_by(
-            user_id=payload.user_id, 
-            exercise_id=exercise_id
-        ).first()
-
-        if not progress:
-            progress = ExerciseProgressModel(
-                user_id=payload.user_id, 
-                exercise_id=exercise_id,
-                status=ProgressStatus.IN_PROGRESS,
-                attempts_count=0
-            )
-            db.add(progress)
-        
-        progress.attempts_count += 1
-        progress.last_activity = datetime.now()
-
-        if global_success:
-            progress.status = ProgressStatus.VALIDATED
+        update_student_progress(db, payload.user_id, exercise_id, global_success)
 
         # Final commit
         db.commit()
