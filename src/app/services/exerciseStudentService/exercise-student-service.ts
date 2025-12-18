@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import type { Exercise, ApiResponse, File, Test, CodePayload } from '../../models/exercise.models';
+import type { Exercise, ApiResponse, File, Test, CodePayload, TestRespond } from '../../models/exercise.models';
 import { environment } from '../../../environments/environment.development'; // On importe l'environnement
 
 
@@ -18,8 +18,8 @@ export class ExerciceStudentService {
   }
 
   
-  sendExerciseStudent(ExerciseId: number, payload: CodePayload): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(`${environment.apiUrl}student`, payload);
+  sendExerciseStudent(UnitId: number, CourseId: number, ExerciseId: number, payload: CodePayload): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<TestRespond>>(`${environment.apiUrl}student/unit/${UnitId}/course/${CourseId}/exercise/${ExerciseId}`, payload);
   }
     
 

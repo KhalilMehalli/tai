@@ -57,6 +57,9 @@ export interface TestRunPayload extends CodePayload{
   argv: string;
 }
 
+export interface StudentSubmissionPayload extends CodePayload{
+  user_id : number; 
+}
 
 // Respond from the back
 
@@ -72,6 +75,12 @@ export interface RunResponse {
   exit_code: number;
 }
 
+export interface TestRespond {
+  id: number;
+  actual_output: string;  // Student output
+  status: 'pending' | 'success' | 'failure';
+  error_log: string; 
+}
 
 // EDITOR CONFIGURATION 
 

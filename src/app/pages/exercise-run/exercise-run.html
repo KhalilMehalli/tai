@@ -23,7 +23,7 @@
                 [inputFiles]="files"
                 (consoleMessage)="onConsoleMessage($event)"
                 (filesChange)="onFilesChange($event)"
-                (studentSend)="OnStudentSend()"
+                (studentSend)="onSubmitStudentCode()"
             ></app-editor>
         </div>
 
@@ -82,7 +82,7 @@
 
             @case ('tests') {
                 <app-tests-display
-                    [tests]="tests"
+                    [testsDisplay]="tests"
                 ></app-tests-display>
             }
 
