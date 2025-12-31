@@ -3,6 +3,7 @@ from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileReque
 from app.services.create_exercise import create_exercise
 from app.services.compiler import compile_and_run_logic, compile_logic
 from app.services.exercise_run import get_exercise_for_student, test_student_code
+from app.services.InfoNaviagtion import get_all_units, get_unit_structure
 #from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -55,22 +56,38 @@ async def compilation_teacher_code_endpoint(request: CompileRequest):
     return result
 
 
-# Student 
-
+# Student doing an exercise
 
 @app.get("/student/unit/{unit_id}/course/{course_id}/exercise/{exercise_id}")
 def get_exercise_student_endpoint(unit_id : int, course_id: int,  exercise_id: int, db : Session = Depends(get_db)):
-
+    """ Route call when a student want to do an exercise"""
     exercise = get_exercise_for_student(unit_id, course_id, exercise_id, db)  
     return exercise
 
 
 @app.post("/student/unit/{unit_id}/course/{course_id}/exercise/{exercise_id}")
 async def test_student_code_endpoint(exercise_id : int, payload: StudentSubmissionPayload,  db : Session = Depends(get_db)):
-
+    """ Route call when a student want to test his solution for an exercise"""
     results = await test_student_code(db, exercise_id, payload)
-
     return results
+
+# Ligth information of unit, course and exercise for navigation
+
+
+@app.get("/units/")
+def get_all_ligth_units_informations(user_id : int, db: Session = Depends(get_db)):
+    """Send a summary of all the unit the user can do. For the dashbord"""
+    results = get_all_units(user_id, db)
+    return results
+
+@app.get("/unit/{unit_id}/courses/")
+
+def get_all_ligth_unit_informations(unit_id : int, user_id : int, db: Session = Depends(get_db)):
+    """Send the information of all the course and exercise in a unit. """
+    results = get_unit_structure(unit_id, user_id, db)
+    return results
+
+
 
 """
 # Test

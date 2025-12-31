@@ -29,7 +29,7 @@ class UnitModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
-    description = Column(Text)
+    description = Column(Text, nullable=False)
     author_id = Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
     visibility = Column(SqlEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
     difficulty = Column(Integer, nullable=False)
@@ -43,6 +43,7 @@ class CourseModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
     unit_id = Column(Integer, ForeignKey("unit.id", ondelete="CASCADE"), nullable=False)
     visibility = Column(SqlEnum(Visibility), default=Visibility.PRIVATE, nullable=False)
     difficulty = Column(Integer, nullable=False)

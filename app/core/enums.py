@@ -31,3 +31,5 @@ class ProgressStatus(str,Enum):
 class TestStatus(str, Enum):
     SUCCESS = "success"
     FAILURE = "failure"
+
+    

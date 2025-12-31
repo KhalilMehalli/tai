@@ -101,5 +101,29 @@ class StudentSubmissionPayload(BaseModel):
     language: Language
     files: List[File]
 
+# Type for creating link to the units, courses and exercises
 
+# Commun base for exercise, course and unit
+class BaseNav(BaseModel):
+    id: int
+    name: str
+    description: str 
+    visibility: Visibility
+    difficulty: int = Field(..., ge=1, le=5)
+    author_id: int
 
+# Ligth information of an exercice (without his files, etc...)
+class ExerciseNav(BaseNav):
+    position: int
+    # Can be good in the futur to add attemps count or other info 
+
+class CourseNav(BaseNav):
+    position: int
+    exercises: List[ExerciseNav] = []
+
+class UnitNav(BaseNav):
+    courses: List[CourseNav] = []
+
+# Ligth information of all the unit a student need to do
+class UnitSummary(BaseNav):
+    pass

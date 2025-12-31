@@ -113,7 +113,7 @@ def inject_markers_into_template(template_content: str, markers: List[MarkerData
     
     return full_code
 
-def extract_student_solutions(full_content: str, extension : str) -> List[MarkerData]:
+def extract_student_solutions(full_content: str, extension : str, expected_markers_ids: List[str] = None) -> List[MarkerData]:
     """
     Parses the student code and extract his solutions.
     """
@@ -122,12 +122,24 @@ def extract_student_solutions(full_content: str, extension : str) -> List[Marker
     pattern = rf'{comment} TODO: (?P<id>.*)\n(?P<content>.*?)(?=\n\s*{comment} END TODO: (?P=id))'
 
     markers_found: List[MarkerData] = []
+    # Security to check if all the markers are here
+    found_ids = set()
 
     for match in re.finditer(pattern, full_content, flags=re.DOTALL):
         m_id = match.group("id").strip()
         content = match.group("content")
 
         markers_found.append(MarkerData(id=m_id, content=content))
+        found_ids.add(m_id)
+
+    if expected_markers_ids:
+        missing_ids = set(expected_markers_ids) - found_ids
+
+        # If an markers is not found
+        if missing_ids:
+            raise ValueError(
+                f"Les balises suivantes sont manquantes ou altérées : {', '.join(missing_ids)}"
+            )
 
     return markers_found
 

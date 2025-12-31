@@ -21,7 +21,7 @@ def get_secure_exercise_or_404(db: Session, exercise_id: int) -> ExerciseModel:
         db.query(ExerciseModel)
         .options(
             # selectinload loads the kids of Exercise (files, hint, tests) in the same requestfor better performance
-            selectinload(ExerciseModel.files),
+            selectinload(ExerciseModel.files).selectinload(ExerciseFileModel.markers),
             selectinload(ExerciseModel.tests),
             selectinload(ExerciseModel.hints),
 
@@ -160,7 +160,7 @@ def initialize_submission_history(db: Session, user_id: int, exercise_id: int) -
 
 def update_student_progress(db: Session, user_id: int, exercise_id: int, is_success: bool):
     """Updates or creates the progress entry for the student."""
-
+    
     progress = db.query(ExerciseProgressModel).filter_by(
         user_id=user_id, 
         exercise_id=exercise_id
@@ -181,12 +181,18 @@ def update_student_progress(db: Session, user_id: int, exercise_id: int, is_succ
     if is_success:
         progress.status = ProgressStatus.VALIDATED
 
-def process_and_save_markers(db: Session, submission_id: int, payload_files: List[File]) -> List[MarkerData]:
+def process_and_save_markers(db: Session, submission_id: int, payload_files: List[File], teacher_files: List[ExerciseFileModel]) -> List[MarkerData]:
     """Extracts student markers and saves them to the DB."""
     all_markers: List[MarkerData] = []
 
     for student_file in payload_files:
-        markers = extract_student_solutions(student_file.content, student_file.extension)
+        # Find the teacher file equivalent of the student file
+        teacher_file = next((f for f in teacher_files if f.id == student_file.id), None)
+
+        # Excepted ids in this file, extract_student_solutions will check if the student don't delete a markers 
+        expected_ids = [m.marker_id for m in teacher_file.markers]
+
+        markers = extract_student_solutions(student_file.content, student_file.extension, expected_ids)
         all_markers.extend(markers)
 
         for m in markers:
@@ -286,7 +292,7 @@ async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmi
         submission_id = submission.id
 
         # Parsing and save the student solution
-        all_student_markers: List[MarkerData] = process_and_save_markers(db, submission_id, payload.files)
+        all_student_markers: List[MarkerData] = process_and_save_markers(db, submission_id, payload.files, exercise.files)
 
         # Reconstruction files (student markers + teacher template)
         # We use exercise.files directly (loaded via selectinload)
@@ -336,7 +342,13 @@ async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmi
                 "test_responses" : test_responses_list}
              
         }
-        
+    
+    except ValueError as e:
+            return {
+                "status": False,
+                "message": "Erreur de format",
+                "data": { "format_error": str(e) }
+            }     
     except Exception as e:
         db.rollback()
         print(f"error in test_student_code function : {e}") 
