@@ -1,5 +1,5 @@
 <div>
-    <h3 class="text-lg font-bold text-gray-800 mb-3">Tests</h3>
+    <h3 class="text-lg font-bold text-gray-300 mb-3">Tests</h3>
         
     <div class="flex flex-col gap-2 mb-3">
         @for(test of tests; track test.id){
@@ -7,8 +7,8 @@
 
                 <input 
                     type="text" placeholder="Args (ex: 5 10)"
-                    class="w-1/3 p-2 border border-gray-300 rounded-xl text-sm 
-                            outline-none focus:border-gray-800"
+                    class="w-1/3 p-2 border border-gray-300 text-white rounded-xl text-sm 
+                            outline-none "
                     [(ngModel)]="test.argv"
                     [readonly]="test.validated"
                 />
@@ -42,7 +42,7 @@
 
     <button
         type="button"
-        class="text-sm text-gray-800 font-semibold flex items-center gap-1"
+        class="text-sm text-white font-semibold flex items-center gap-1"
         (click)="addTest()"
     >
         + Ajouter un autre test

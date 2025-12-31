@@ -63,7 +63,7 @@
   @if (activeFile) {
     <div class="flex-1 min-h-0 relative overflow-hidden">
       <textarea #contentInput
-        class="w-full h-full bg-gray-900 text-gray-100 font-mono p-3 rounded-b-xl text-xs 
+        class="w-full h-full bg-gray-700 text-gray-100 font-mono p-3 rounded-b-xl text-xs 
                resize-none  outline-none overflow-auto"
         [value]="activeFile.content"
         (input)="onContentChange(contentInput.value)"

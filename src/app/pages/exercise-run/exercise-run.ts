@@ -1,4 +1,4 @@
-import { Component, Input, numberAttribute,} from '@angular/core';
+import { Component, Input, numberAttribute, SimpleChanges} from '@angular/core';
 import { finalize } from 'rxjs/operators'
 
 import { FormsModule } from '@angular/forms';
@@ -6,8 +6,10 @@ import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
 import { TestsDisplay } from '../../components/testsDisplay/tests-display/tests-display';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
-import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, TestDisplay, StudentSubmissionPayload, RunResponse, TestRespond} from '../../models/exercise.models';
+import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
+import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, TestDisplay, StudentSubmissionPayload, RunResponse, TestRespond, UnitNav} from '../../models/exercise.models';
 import { HintsDisplay } from '../../components/hintsDisplay/hints-display/hints-display';
+import { SideBar } from '../../side-bar/side-bar';
 
 interface TestRespondList {
   test_responses : TestRespond[];
@@ -15,7 +17,7 @@ interface TestRespondList {
 
 @Component({
   selector: 'app-exercise-run',
-  imports: [FormsModule, Editor, Console, TestsDisplay, HintsDisplay],
+  imports: [FormsModule, Editor, Console, TestsDisplay, HintsDisplay, SideBar],
   templateUrl: './exercise-run.html',
   styleUrl: './exercise-run.css',
 })
@@ -40,14 +42,46 @@ export class ExerciseRun {
   attemptsCount = 0;
   isSubmitting = false; // Deseable the submit button after a submit
 
-  constructor(private exerciseStudentService: ExerciceStudentService){}
+  //Data for the SideB
+  unitNavigation: UnitNav | null = null;
 
-  ngOnInit(){
-    this.fetchExercise(this.unitId, this.courseId, this.exerciseId);
+  constructor(private exerciseStudentService: ExerciceStudentService,
+              private navigationInformation : NaviagtionInfomration
+  ){}
+
+  
+  ngOnChanges(changes: SimpleChanges): void {
+    
+    // Fetch the Exercise Content (Code, Tests, etc.)
+    // If exerciseId changed, we must reload the editor content. 
+    // Navigation in sidebar
+    if (changes['exerciseId'] && this.exerciseId) {
+        this.fetchExercise(this.unitId, this.courseId, this.exerciseId);
+    }
+
+    // Fetch the Sidebar Navigation (Unit Structure)
+    // Only fetch if unitId changed (or on first load).
+    if (changes['unitId'] && this.unitId) {
+        this.fetchSidebarContent(this.unitId);
+    }
   }
 
-   
+
+  private fetchSidebarContent(unitId: number): void {
+      this.navigationInformation.getUnitStructure(unitId).subscribe({
+          next: (navData) => {
+              this.unitNavigation = navData;
+              this.onConsoleMessage(this.unitNavigation.name)
+          },
+          error: (err) => console.error('Failed to load sidebar navigation', err)
+      });
+  }
+
   private fetchExercise(UnitId: number, CourseId: number, ExerciseId: number): void {
+    // Remove the old data
+    this.resetExerciseState();
+
+    
     this.exerciseStudentService.getExerciseForStudent(UnitId, CourseId, ExerciseId).subscribe({
       next: (res) => {
         this.onConsoleMessage(JSON.stringify(res));
@@ -194,4 +228,17 @@ private handleGradingSuccess(data: TestRespondList): void {
     });
   }
   
+  // Clears all current exercise data.
+  private resetExerciseState(): void {
+    this.files = [];
+    this.tests = [];
+    this.hints = [];
+    this.description = "";
+    this.language = "";
+    this.consoleText = ""; 
+    this.activeTab = 'console'; 
+    this.attemptsCount = 0; 
+
+    this.exerciseData = undefined!; 
+  }
 }

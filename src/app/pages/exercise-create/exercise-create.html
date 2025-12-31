@@ -1,19 +1,19 @@
 <div class="flex h-full w-full p-6 gap-6 bg-gray-800">
 
     <!-- Left panel  -->
-    <div class="w-2/3 h-full bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
+    <div class="w-2/3 h-full bg-gray-900 rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
 
         <div class="flex-none">
           <input type="text"  placeholder="Titre"
             class="w-full p-2 border border-gray-300 rounded-xl text-sm 
-                  text-gray-500 outline-none focus:border-gray-800"
+                  text-white outline-none "
             [(ngModel)]="title">
         </div>
 
 
         <div class="flex-1 min-h-0">
           <textarea id="description" placeholder="Description" class="w-full h-full border border-gray-300 rounded-xl p-3 
-                  text-gray-500 resize-none outline-none focus:border-gray-800"
+                  text-white resize-none outline-none "
             [(ngModel)]="description"></textarea>
         </div>
 
@@ -37,12 +37,12 @@
         </div>
 
     <!-- Right panel  -->
-    <div class="w-1/3 bg-white rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">
+    <div class="w-1/3 bg-gray-900 rounded-3xl p-6 flex flex-col gap-2 overflow-y-auto">
 
         <!-- SECTION CONFIGURATION -->
         <div class="flex flex-col gap-3 mb-2">
             <div class="flex flex-row items-center gap-3">
-                <label class="text-sm font-bold text-gray-800">Langage</label>
+                <label class="text-sm font-bold text-white">Langage</label>
                 <select
                 class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
                 [(ngModel)]="language"
@@ -52,7 +52,7 @@
             </div>
 
             <div class="flex flex-row items-center gap-2">
-                <label class="text-sm font-bold text-gray-800">Visibilité</label>
+                <label class="text-sm font-bold text-white">Visibilité</label>
                 <select
                 class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
                 [(ngModel)]="visibility"
@@ -63,7 +63,7 @@
             </div>
 
             <div class="flex flex-row items-center gap-2">
-                <label class="text-sm font-bold text-gray-800">Difficulté</label>
+                <label class="text-sm font-bold text-white">Difficulté</label>
                 <select
                 class="w-1/2 p-2 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:border-gray-800"
                 [(ngModel)]="difficulty"
@@ -76,7 +76,7 @@
         </div>
 
       
-        <hr class="border-t-2 border-gray-800 my-2">
+        <hr class="border-t-2 border-gray-300 my-2">
 
         
         <app-tests
@@ -85,17 +85,17 @@
             (consoleMessage)="onConsoleMessage($event)">
         </app-tests>
 
-        <hr class="border-t-2 border-gray-800 my-2">
+        <hr class="border-t-2 border-gray-300 my-2">
 
         <app-hints 
         (hintsChange)="onHintsChange($event)">
         </app-hints>
 
-        <hr class="border-t-2 border-gray-800 my-2">
+        <hr class="border-t-2 border-gray-300 my-2">
 
         <div class="flex gap-2">
           <button 
-           class="w-full py-3 bg-gray-800 text-white font-bold rounded-xl  hover:bg-gray-700 "
+           class="w-full py-3 bg-gray-700 text-white font-bold rounded-xl  hover:bg-gray-700 "
            (click)="onCreateExercise()">
               CRÉER
           </button>

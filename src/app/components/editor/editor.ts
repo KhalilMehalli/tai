@@ -38,7 +38,7 @@ export class Editor {
   // Similar to a constructor, but runs whenever inputs change
   ngOnChanges(changes: SimpleChanges): void {
     // If the editor receives files, display them
-    if (changes['inputFiles'] && this.inputFiles.length > 0) {
+    if (changes['inputFiles'] ) {
       console.log(this.inputFiles);
        this.rebuildFilesFromInput();
     }

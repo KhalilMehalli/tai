@@ -114,31 +114,36 @@ export const TEACHER_CONFIG: EditorConfig = {
   respectEditableFlag: false
 };
 
+// Light information about an exercise, course or unit 
 
-/*
-     this.addFile(mainName, true, `#include <stdio.h>
-#include <stdlib.h>
-#include "fonction.h"
 
-int main(char argc, char ** argv) {
-    int a = atoi(argv[1]);
-    int b = atoi(argv[2]);
-    int c = addition(a, b);
-    printf("%d", c);
-    return 0;
-}`);
-      this.addFile("fonction.c", false, `#include <stdio.h>
-#include "fonction.h"
+//Commun base for exercise, course and unit
 
-int addition(int a, int b){
-// <complete id=1>
-   return a + b;
-// </complete>
+export interface BaseNav {
+  id: number;
+  name: string;
+  description: string;
+  visibility: string;
+  difficulty: number; 
+  author_id: number;
 }
-`);
-      this.addFile("fonction.h", false, `#ifndef FONCTION_H
-#define FONCTION_H
 
-int addition(int a, int b);
+// # Ligth information of an exercice (without his files, etc...)
+export interface ExerciseNav extends BaseNav {
+  position: number;
+  //  Can be good in the futur to add attemps count or other info 
+}
 
-#endif`);*/
+export interface CourseNav extends BaseNav {
+  position: number;
+  exercises: ExerciseNav[]; 
+}
+
+export interface UnitNav extends BaseNav {
+  courses: CourseNav[]; 
+}
+
+// Ligth information of all the unit a student need to do
+export interface UnitSummary extends BaseNav {
+  // No new information, just for the readability of the type
+}

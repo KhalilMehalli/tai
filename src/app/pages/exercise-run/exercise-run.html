@@ -1,18 +1,19 @@
 <div class="flex min-h-screen w-full p-6 gap-6 bg-gray-800">
 
     <!-- Left panel  -->
-    <div class="w-1/4 bg-white rounded-3xl  p-6 flex flex-col gap-4 overflow-hidden">
-
-      
-
+    <div class="w-1/4 h-full rounded-3xl overflow-hidden">
+        <app-side-bar 
+            [unit]="unitNavigation" 
+            [currentExerciseId]="exerciseId">
+        </app-side-bar>
     </div>
 
     <!-- Right panel  -->
-    <div class="w-3/4 bg-white rounded-3xl p-6 flex flex-col gap-2">
+    <div class="w-3/4 bg-gray-900 rounded-3xl p-6 flex flex-col gap-2">
 
-        <div class="flex-1 min-h-0">
-          <textarea id="description" placeholder="Description" class="w-full h-full border border-gray-300 rounded-xl p-3 
-                  text-gray-500 resize-none outline-none focus:border-gray-800"
+        <div class="flex-1 min-h-0 bg-gray-900">
+          <textarea id="description" placeholder="Description" class="w-full h-full border rounded-xl p-3 
+                  text-white resize-none outline-none focus:border-gray-300"
             [(ngModel)]="description"></textarea>
         </div>
 
@@ -26,11 +27,6 @@
                 (studentSend)="onSubmitStudentCode()"
             ></app-editor>
         </div>
-
-    
-
-
-
 
 
     <div class="flex-[2_1] min-h-0 flex flex-col overflow-hidden rounded-xl" >      

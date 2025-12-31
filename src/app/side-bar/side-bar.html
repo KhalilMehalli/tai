@@ -1,0 +1,48 @@
+<div class="h-full w-full flex flex-col bg-gray-900 border-r border-gray-800 overflow-y-auto">
+
+  @if (!unit) {
+    <div class="flex h-full flex-col items-center justify-center space-y-3 p-4 text-gray-500 animate-pulse">
+      <span class="text-xs text-gray-500 animate-pulse">Chargement du module...</span>
+    </div>
+  } 
+  
+  @else {
+    <div class="sticky top-0 z-10 border-b border-gray-800 bg-gray-900/95 p-5 backdrop-blur-sm">
+      <h3 class="text-lg font-bold text-gray-100 tracking-tight mb-1" [title]="unit!.description">{{ unit!.name }}</h3>
+    </div>
+
+    <div class="flex-1 py-4 space-y-6">
+      
+      @for (course of unit!.courses; track course.id) {
+        <div>
+          <h4 class="px-5 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 select-none">
+            {{ course.name }}
+          </h4>
+
+          <ul class="space-y-0.5">
+            @for (exo of course.exercises; track exo.id) {
+              
+              @let isActive = exo.id === currentExerciseId;
+
+              <li>
+                <a [routerLink]="['/unit', unit!.id, 'course', course.id, 'exercise', exo.id]"
+                   class="group relative flex items-center gap-3 px-5 py-2.5 text-sm border-l-[3px]"
+                   [class.border-blue-500]="isActive"
+                   [class.border-transparent]="!isActive"
+                   [class.text-blue-400]="isActive"
+                   [class.text-gray-400]="!isActive">
+
+
+                  <span class="flex-1 font-medium">
+                    {{ exo.name }}
+                  </span>
+
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  }
+</div>
