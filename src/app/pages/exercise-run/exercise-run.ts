@@ -9,7 +9,7 @@ import { ExerciceStudentService } from '../../services/exerciseStudentService/ex
 import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
 import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, TestDisplay, StudentSubmissionPayload, RunResponse, TestRespond, UnitNav} from '../../models/exercise.models';
 import { HintsDisplay } from '../../components/hintsDisplay/hints-display/hints-display';
-import { SideBar } from '../../side-bar/side-bar';
+import { SideBar } from '../../components/side-bar/side-bar';
 
 interface TestRespondList {
   test_responses : TestRespond[];

@@ -52,6 +52,7 @@ export class Editor {
   private rebuildFilesFromInput(): void {
     // Reset the editor (in case for the futurrr)
     this.files = [];
+    if(this.inputFiles.length == 0) {return} // When a exercise is private, don't display file
 
     const newFiles = this.inputFiles.map(file => ({
         ...file,  

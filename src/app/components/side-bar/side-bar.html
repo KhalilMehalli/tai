@@ -1,4 +1,4 @@
-<div class="h-full w-full flex flex-col bg-gray-900 border-r border-gray-800 overflow-y-auto">
+<div class="h-full w-full flex flex-col bg-gray-900 overflow-y-auto">
 
   @if (!unit) {
     <div class="flex h-full flex-col items-center justify-center space-y-3 p-4 text-gray-500 animate-pulse">
@@ -15,7 +15,7 @@
       
       @for (course of unit!.courses; track course.id) {
         <div>
-          <h4 class="px-5 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 select-none">
+          <h4 class="px-5 mb-2 text-sm font-bold uppercase tracking-widest text-gray-300 select-none" [title]="course!.description">
             {{ course.name }}
           </h4>
 
@@ -27,13 +27,13 @@
               <li>
                 <a [routerLink]="['/unit', unit!.id, 'course', course.id, 'exercise', exo.id]"
                    class="group relative flex items-center gap-3 px-5 py-2.5 text-sm border-l-[3px]"
-                   [class.border-blue-500]="isActive"
+                   [class.border-gray-100]="isActive"
                    [class.border-transparent]="!isActive"
-                   [class.text-blue-400]="isActive"
+                   [class.text-gray-100]="isActive"
                    [class.text-gray-400]="!isActive">
 
 
-                  <span class="flex-1 font-medium">
+                  <span class="flex-1 font-medium" [title]="exo!.description">
                     {{ exo.name }}
                   </span>
 

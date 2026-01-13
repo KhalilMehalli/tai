@@ -147,3 +147,12 @@ export interface UnitNav extends BaseNav {
 export interface UnitSummary extends BaseNav {
   // No new information, just for the readability of the type
 }
+
+export interface CourseCreatePayload {
+  name: string;
+  description: string;
+  difficulty: number;
+  visibility: string;
+  unit_id: number;
+  author_id: number;
+}

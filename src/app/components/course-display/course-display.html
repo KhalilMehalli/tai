@@ -1,0 +1,53 @@
+<div class="space-y-6"> 
+    @for (course of courses; track course.id) {
+    
+    <div class="bg-gray-900 rounded-xl border border-gray-300 overflow-hidden ">
+      
+      <div class="flex items-center gap-4 p-5 border-b border-gray-300">
+        
+        <h2 class="text-lg font-bold text-white whitespace-nowrap">
+          {{ course.name }}
+        </h2>
+
+        <div class="h-4 w-px bg-gray-300"></div>
+
+        <p class="flex-1 text-gray-300 text-sm truncate min-w-0" [title]="course.description">
+          {{ course.description || 'Pas de description' }}
+        </p>
+
+        <span class="text-xs font-medium text-gray-300 border border-gray-300 rounded px-2 py-0.5 whitespace-nowrap">
+          Niv {{ course.difficulty }}
+        </span>
+      </div>
+
+
+      <div class="p-2 bg-gray-900">
+        
+        <div class="flex flex-col gap-1"> 
+          @for (exo of course.exercises; track exo.id) {
+            
+            <a [routerLink]="['/unit', unitId, 'course', course.id, 'exercise', exo.id]"
+               class="group flex items-center justify-between px-4 py-3 rounded-lg bg-gray-700/80 border border-gray-500/80">
+              
+              <div class="flex items-center">
+                
+                
+                <span class="text-sm font-medium text-gray-300 group-hover:text-grey-300">
+                  - {{ exo.name }}
+                </span>
+              </div>
+
+
+            </a>
+
+          } @empty {
+            <div class="text-center text-xs text-gray-300 py-4">
+              Ce cours ne contient pas encore d'exercices.
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

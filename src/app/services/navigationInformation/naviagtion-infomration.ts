@@ -41,6 +41,7 @@ export class NaviagtionInfomration {
     // Good when a student is in the exercise 1 of the course 1 and go to the exercise 2 of the same course
     // No need to call the backend again because the information are the same
     if (this.Structure && this.UnitId === unitId) {
+      console.log("Data from cache")
       return of(this.Structure); 
     }
 
