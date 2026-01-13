@@ -127,3 +127,12 @@ class UnitNav(BaseNav):
 # Ligth information of all the unit a student need to do
 class UnitSummary(BaseNav):
     pass
+
+
+class CreationCourseRequest(BaseModel):
+  name: str
+  description: str
+  difficulty: int
+  visibility: Visibility
+  unit_id: int
+  author_id: int

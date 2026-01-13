@@ -1,17 +1,19 @@
 from fastapi import FastAPI, Depends
-from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, StudentSubmissionPayload
+from app.schemas.schemas import ExerciseFullCreate, TestRunRequest, CompileRequest, StudentSubmissionPayload, CreationCourseRequest
 from app.services.create_exercise import create_exercise
 from app.services.compiler import compile_and_run_logic, compile_logic
 from app.services.exercise_run import get_exercise_for_student, test_student_code
 from app.services.InfoNaviagtion import get_all_units, get_unit_structure
+from app.services.unit_update import create_course
+
 #from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import get_db #, engine
 from sqlalchemy.orm import Session 
-from app.db import models
+from app.db import models 
 
-# Create all the table if it's the first time 
+# Create all the table if it's the first time c
 #models.Base.metadata.create_all(bind=engine) used before alembic, now it's alembic which will configure the db
 
 app = FastAPI()
@@ -56,6 +58,15 @@ async def compilation_teacher_code_endpoint(request: CompileRequest):
     return result
 
 
+# Creation of a course 
+
+@app.post("/create-course")
+def create_course_endpoint(course_data: CreationCourseRequest, db: Session = Depends(get_db)):
+    print(course_data)
+    """ Route call after the teacher create a course"""
+    result = create_course(course_data, db) 
+    return result
+
 # Student doing an exercise
 
 @app.get("/student/unit/{unit_id}/course/{course_id}/exercise/{exercise_id}")
@@ -74,16 +85,16 @@ async def test_student_code_endpoint(exercise_id : int, payload: StudentSubmissi
 # Ligth information of unit, course and exercise for navigation
 
 
-@app.get("/units/")
+@app.get("/units")
 def get_all_ligth_units_informations(user_id : int, db: Session = Depends(get_db)):
     """Send a summary of all the unit the user can do. For the dashbord"""
     results = get_all_units(user_id, db)
     return results
 
-@app.get("/unit/{unit_id}/courses/")
-
+@app.get("/unit/{unit_id}/courses")
 def get_all_ligth_unit_informations(unit_id : int, user_id : int, db: Session = Depends(get_db)):
     """Send the information of all the course and exercise in a unit. """
+    print("test")
     results = get_unit_structure(unit_id, user_id, db)
     return results
 
