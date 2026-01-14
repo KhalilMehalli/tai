@@ -44,7 +44,8 @@
 
       <app-course-display 
         [courses]="unitData.courses"
-        [unitId]="unitData.id">
+        [unitId]="unitData.id"
+        (deleteRequest)="handleDeleteCourse($event)">
       </app-course-display>
 
       @if (!isAddingCourse) {

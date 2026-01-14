@@ -15,4 +15,8 @@ export class UnitUpdateService {
   createCourse(payload: CourseCreatePayload): Observable<CourseNav> {
     return this.http.post<CourseNav>(`${environment.apiUrl}create-course`, payload);
   }
+
+  deleteCourse(courseId: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}course/${courseId}`);
+  }
 }

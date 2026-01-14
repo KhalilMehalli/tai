@@ -106,4 +106,22 @@ export class UnitInfo {
     });
   }
 
+  handleDeleteCourse(courseId: number) {
+    this.unitUpdateService.deleteCourse(courseId).subscribe({
+      next: () => {
+        if (this.unitData) {
+            // Complete reccreation of the list of courses without the course the user delete
+            this.unitData = {
+                ...this.unitData,
+                courses: this.unitData.courses.filter(c => c.id !== courseId)
+            };
+        }
+      },
+      error: (err) => {
+        console.error("Impossible de supprimer", err);
+        alert("Erreur lors de la suppression du cours.");
+      }
+    });
+  }
+
 }
