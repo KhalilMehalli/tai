@@ -1,5 +1,5 @@
 from fastapi import  HTTPException, status
-from app.db.models import UnitModel, CourseModel
+from app.db.models import UnitModel, CourseModel, ExerciseModel
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -55,4 +55,15 @@ def delete_course(course_id: int, db: Session):
     db.delete(course)
     db.commit()
     
-    return {"message": "Course deleted successfully"}
+    return None
+
+def delete_exercise(exercise_id: int, db: Session):
+    exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_id).first()
+    
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    
+    db.delete(exercise)
+    db.commit()
+    
+    return None

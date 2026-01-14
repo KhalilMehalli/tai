@@ -4,7 +4,7 @@ from app.services.create_exercise import create_exercise
 from app.services.compiler import compile_and_run_logic, compile_logic
 from app.services.exercise_run import get_exercise_for_student, test_student_code
 from app.services.InfoNaviagtion import get_all_units, get_unit_structure
-from app.services.unit_update import create_course, delete_course
+from app.services.unit_update import create_course, delete_course, delete_exercise
 
 #from app.tests.all_db import get_all_db_c
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,7 +58,7 @@ async def compilation_teacher_code_endpoint(request: CompileRequest):
     return result
 
 
-# Endpoints related to courses 
+# Endpoints related to a unit content 
 
 @app.post("/create-course")
 def create_course_endpoint(course_data: CreationCourseRequest, db: Session = Depends(get_db)):
@@ -71,6 +71,12 @@ def create_course_endpoint(course_data: CreationCourseRequest, db: Session = Dep
 def delete_course_endpoint(course_id: int, db: Session = Depends(get_db)): 
     """ Route call when a teacher delete a course"""
     result = delete_course(course_id, db) 
+    return result
+
+@app.delete("/exercise/{exercise_id}")
+def delete_exercise_endpoint(exercise_id: int, db: Session = Depends(get_db)): 
+    """ Route call when a teacher delete a exercise"""
+    result = delete_exercise(exercise_id, db) 
     return result
 
 # Student doing an exercise
