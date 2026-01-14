@@ -19,4 +19,8 @@ export class UnitUpdateService {
   deleteCourse(courseId: number): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}course/${courseId}`);
   }
+
+  deleteExercise(exerciseId: number): Observable<void> {
+  return this.http.delete<void>(`${environment.apiUrl}exercise/${exerciseId}`);
+}
 }

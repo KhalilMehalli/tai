@@ -54,11 +54,15 @@ export class NaviagtionInfomration {
       })
     );
   }
-
+  clearUnitCache(): void {
+    this.UnitId = null;
+    this.Structure = null;
+  }
   clearAllCache(): void {
     this.UnitId = null;
     this.Structure = null;
     this.DashboardList = null;
   }
+
 
 }

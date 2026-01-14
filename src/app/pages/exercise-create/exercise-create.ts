@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input, numberAttribute } from '@angular/core';
+import { Router } from '@angular/router';
 import { Editor } from '../../components/editor/editor';
 import { Tests } from '../../components/tests/tests';
 import { Hints } from '../../components/hints/hints';
@@ -6,7 +7,7 @@ import { File, Hint, Test, Exercise, EditorConfig, TEACHER_CONFIG, CodePayload }
 import { Console } from '../../components/console/console';
 import { FormsModule } from '@angular/forms';
 import { ExerciceTeacherService } from '../../services/exerciceTeacherService/exercice-teacher-service';
-
+import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
 
 @Component({
   selector: 'app-exercise-create',
@@ -22,6 +23,9 @@ import { ExerciceTeacherService } from '../../services/exerciceTeacherService/ex
 })
 
 export class ExerciseCreate {
+  @Input({ transform: numberAttribute }) unitId!: number;
+  @Input({ transform: numberAttribute }) courseId!: number;
+
   // THe options the editor has (Teacher = all options)
   options: EditorConfig = TEACHER_CONFIG;
 
@@ -37,10 +41,13 @@ export class ExerciseCreate {
   visibility: string = "private";
   difficulty: number = 1;
 
-  course_id: number = 1;
+
   position: number = 0;
 
-  constructor(private exerciceTeacherService: ExerciceTeacherService) {}
+  constructor(private exerciceTeacherService: ExerciceTeacherService,
+              private navigationInformation: NaviagtionInfomration,
+              private router: Router
+  ) {}
 
   onFilesChange(files: File[]) : void {
     this.files = files;
@@ -123,7 +130,7 @@ onRunTest(test: Test): void {
 
     // Payload construct
     const payload: Exercise = {
-      course_id: this.course_id,
+      course_id: this.courseId,
       name: this.title.trim(),
       description: this.description.trim(),
       visibility: this.visibility,
@@ -145,6 +152,12 @@ onRunTest(test: Test): void {
         this.onConsoleMessage(
           'Exercice créé avec succès !\n' + JSON.stringify(res, null, 2),
         );
+
+        // Clean the unit cache to display correctly the new exercise created
+        this.navigationInformation.clearUnitCache();
+        setTimeout(() => {
+            this.router.navigate(['/unit', this.unitId]);
+        }, 2000); // Small delay to allow the user to read the message
       },
       error: (err) => {
         this.onConsoleMessage(err.error.detail);

@@ -12,14 +12,25 @@ export class CourseDisplay {
   @Input() courses: CourseNav[] = [];
   @Input() unitId!: number;
 
-  @Output() deleteRequest = new EventEmitter<number>();
+  @Output() deleteCourseRequest = new EventEmitter<number>();
+  @Output() deleteExerciseRequest = new EventEmitter<{courseId: number, exerciseId: number}>();
 
   onDeleteClick(courseId: number) {
     // "confirm" function will open a pop up and "ask" a question to the user
     if (confirm('Voulez-vous vraiment supprimer ce cours et tous ses exercices ?')) {
-      this.deleteRequest.emit(courseId); 
+      this.deleteCourseRequest.emit(courseId); 
       console.log("oui")
       return;
+    }
+  }
+
+  onDeleteExerciseClick(courseId: number, exerciseId: number, event: Event) {
+    // IMPORTANT : Empêche le clic de "remonter" vers la balise <a> et de changer de page
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (confirm('Voulez-vous vraiment supprimer cet exercice ?')) {
+      this.deleteExerciseRequest.emit({ courseId, exerciseId });
     }
   }
 }

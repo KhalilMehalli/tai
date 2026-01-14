@@ -124,4 +124,24 @@ export class UnitInfo {
     });
   }
 
+  handleDeleteExercise(payload: { courseId: number, exerciseId: number }) {
+    this.unitUpdateService.deleteExercise(payload.exerciseId).subscribe({
+      next: () => {
+        if (this.unitData) {
+          // Find the specific course that contains the deleted exercise
+          const courseToUpdate = this.unitData.courses.find(c => c.id === payload.courseId);
+          
+          if (courseToUpdate) {
+            // Remove the exercise from the list by filtering it out
+            courseToUpdate.exercises = courseToUpdate.exercises.filter(e => e.id !== payload.exerciseId);
+          }
+        }
+      },
+      error: (err) => {
+        console.error("Erreur suppression exercice", err);
+        alert("Erreur lors de la suppression de l'exercice.");
+      }
+    });
+  }
+
 }
