@@ -44,3 +44,15 @@ def create_course(course_data: CreationCourseRequest, db: Session):
         
         exercises=[]
     )
+
+def delete_course(course_id: int, db: Session):
+    # Find the course
+    course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
+
+    if not course:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    
+    db.delete(course)
+    db.commit()
+    
+    return {"message": "Course deleted successfully"}
