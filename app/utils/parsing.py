@@ -16,7 +16,7 @@ class ParsedResult:
 
 
 COMMENT_SYMBOLS = {
-    "c":  r"//", "h" : r"//"
+    "c":  r"//", "h" : r"//", "java" : r"//", "py" : "#"
 }
 
 
@@ -86,6 +86,8 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
     # re.sub runs the replacement_logic function for every match found
     template_content = re.sub(pattern, replacement_logic, full_content, flags=re.DOTALL)
+
+    print(template_content)
     
     return ParsedResult(template=template_content, markers=markers_found)
 

@@ -4,11 +4,18 @@ from enum import Enum
 
 class Language(str, Enum):
     C = "c"
+    JAVA = "java"
+    PYTHON = "python" 
+    CCP = "cpp"
 
 class Extension(str, Enum):
     C = "c"
     H = "h"
-    TXT = "txt" 
+    TXT = "txt"
+    JAVA = "java"
+    PY = "py" 
+    CPP = "cpp"
+    HPP = "hpp"
 
 class Visibility(str, Enum):
     PUBLIC = "public"
