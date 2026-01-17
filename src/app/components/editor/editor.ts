@@ -4,6 +4,8 @@ import { File, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models
 
 const LANGUAGE_EXTENSIONS: Record<string, string> = {
   c: 'c',
+  java: 'java',
+  python: 'py'
 };
 
 @Component({

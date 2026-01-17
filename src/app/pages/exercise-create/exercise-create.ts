@@ -78,6 +78,7 @@ export class ExerciseCreate {
       };
 
       this.onConsoleMessage('Compilation en cours...');
+      this.onConsoleMessage(JSON.stringify(payload));
 
       this.exerciceTeacherService.compile(payload).subscribe({
         next: (res) => {
@@ -89,7 +90,7 @@ export class ExerciseCreate {
       });
     }  
 
-onRunTest(test: Test): void {
+  onRunTest(test: Test): void {
     const payload = {
       files: this.files,
       language: this.language,
