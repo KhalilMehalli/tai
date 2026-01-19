@@ -4,3 +4,5 @@ __pycache__/
 download
 
 .env
+
+CLAUDE.md
