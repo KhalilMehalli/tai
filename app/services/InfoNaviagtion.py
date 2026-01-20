@@ -52,13 +52,14 @@ def get_unit_structure(unit_id : int, user_id : int, db: Session ):
             detail=f"Module introuvable"
         )
 
-
+    """
     if unit.visibility == Visibility.PRIVATE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Module privé"
         )
-    
+    """    
+
     courses_nav_list : List[CourseNav] = []
 
     for course in unit.courses:

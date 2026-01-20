@@ -61,7 +61,7 @@ class ExerciseFullCreate(BaseModel):
     # The hints
     hints: List[HintCreate]
 
- # What the front will receive when a student demand an exercise
+ # What the front will receive when a user demand an exercise
 class ExerciseFull(BaseModel):
     #  General informations 
     course_id: int
@@ -129,10 +129,61 @@ class UnitSummary(BaseNav):
     pass
 
 
-class CreationCourseRequest(BaseModel):
+# Creation course and unit from the front 
+class CourseCreate(BaseModel):
   name: str
   description: str
-  difficulty: int
+  difficulty: int = Field(..., ge=1, le=5)
   visibility: Visibility
   unit_id: int
   author_id: int
+
+
+class UnitCreate(BaseModel):
+    name: str
+    description: str
+    difficulty: int = Field(..., ge=1, le=5)
+    visibility: Visibility
+    author_id: int
+
+# Update schemas
+
+class UnitUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    difficulty: int | None = Field(None, ge=1, le=5)
+    visibility: Visibility | None = None
+
+class CourseUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    difficulty: int | None = Field(None, ge=1, le=5)
+    visibility: Visibility | None = None
+
+"""
+# Full exercise update (replaces files, tests, hints entirely)
+class ExerciseFullUpdate(BaseModel):
+    name: str
+    description: str
+    difficulty: int = Field(..., ge=1, le=5)
+    visibility: Visibility
+    language: Language
+    files: List[FileCreate]
+    tests: List[TestCaseCreate]
+    hints: List[HintCreate]
+
+
+# Response for teacher getting exercise for editing (with reconstructed files)
+class ExerciseForTeacher(BaseModel):
+    id: int
+    course_id: int
+    name: str
+    description: str
+    visibility: Visibility
+    language: Language
+    difficulty: int = Field(..., ge=1, le=5)
+    position: int
+    files: List[FileCreate]  # Files with reconstructed content (markers included)
+    tests: List[Test]
+    hints: List[Hint]
+"""

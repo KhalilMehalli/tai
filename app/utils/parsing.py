@@ -145,6 +145,30 @@ def extract_student_solutions(full_content: str, extension : str, expected_marke
 
     return markers_found
 
+def reconstruct_file_with_markers(template: str, markers: list, extension: str) -> str:
+    """
+    Reconstruct the original teacher code from template + markers.
+    Replaces '// TODO: id ... // END TODO: id' with '// <complete id="id">content// </complete>'
+    """
+    comment = COMMENT_SYMBOLS.get(extension)
+    if comment is None:
+        return template
+
+    # Create a map of marker_id -> solution_content
+    marker_map = {m.marker_id: m.solution_content for m in markers}
+
+    # Pattern to match TODO markers in template
+    pattern = rf'{comment} TODO: (?P<id>.*)\n\n\s*{comment} END TODO: (?P=id)'
+
+    def replacement_logic(match):
+        m_id = match.group("id").strip()
+        content = marker_map.get(m_id, "")
+        # Reconstruct the original <complete> tag format
+        return f'{comment} <complete id={m_id}>{content}{comment} </complete>'
+
+    reconstructed = re.sub(pattern, replacement_logic, template)
+    return reconstructed
+
 if __name__ == "__main__":
 
     c_code = """ //  <complete id = "65">

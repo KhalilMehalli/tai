@@ -19,7 +19,7 @@ COMPILER_CONFIG = {
     }, 
     "java": {
         "compiler_cmd": ["javac", "{input_files}"],
-        "run_cmd": ["java", "Main"], # Suppose que le fichier main s'appelle Main.java
+        "run_cmd": ["java", "Main"], 
         "extension": "java",
         "main_name": "Main"
     }  
