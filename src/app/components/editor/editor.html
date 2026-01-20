@@ -16,6 +16,7 @@
                     border-b border-transparent"
             [value]="file.extension ? file.name + '.' + file.extension : file.name"
             [readonly] = "!options.canRenameFiles"
+            (click)="setActiveFile(file)"
             (blur)="onNameChange(file, nameInput.value)"
             (keydown.enter)="$event.preventDefault(); nameInput.blur()"
             />

@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Test } from '../../models/exercise.models';
 
 interface TestRow extends Test{
-  id: number; 
+  id: number;
   validated: boolean;
 }
 
@@ -15,12 +15,24 @@ interface TestRow extends Test{
 })
 
 export class Tests {
+  @Input() inputTests: Test[] = [];
   @Output() testsChange = new EventEmitter<Test[]>()
   @Output() runTest = new EventEmitter<Test>();
   @Output() consoleMessage = new EventEmitter<string>()
 
   tests: TestRow[] = [];
   private counter = 0;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['inputTests'] && this.inputTests && this.inputTests.length > 0) {
+      // Initialize with existing tests for edit mode
+      this.tests = this.inputTests.map((test, index) => ({
+        ...test,
+        id: this.counter++,
+        validated: true
+      }));
+    }
+  }
 
   addTest() : void {
     this.tests.push({

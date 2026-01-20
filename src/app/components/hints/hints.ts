@@ -1,5 +1,4 @@
-
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Hint } from '../../models/exercise.models';
 
@@ -15,10 +14,22 @@ interface HintRow extends Hint {
   styleUrl: './hints.css',
 })
 export class Hints {
+  @Input() inputHints: Hint[] = [];
   @Output() hintsChange = new EventEmitter<Hint[]>();
 
-  hints: HintRow[] = [] ;
+  hints: HintRow[] = [];
   private counter = 0;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['inputHints'] && this.inputHints ) {
+      // Initialize with existing hints for edit mode
+      this.hints = this.inputHints.map((hint, index) => ({
+        ...hint,
+        id: this.counter++,
+        validated: true
+      }));
+    }
+  }
 
   addHint(): void {
     this.hints.push({

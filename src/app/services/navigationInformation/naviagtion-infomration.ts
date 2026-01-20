@@ -25,7 +25,7 @@ export class NaviagtionInfomration {
     }
 
     // Call backend
-    return this.http.get<UnitSummary[]>(`${environment.apiUrl}units`).pipe(
+    return this.http.get<UnitSummary[]>(`${environment.apiUrl}units?user_id=1`).pipe(
       tap((data) => {
         this.DashboardList = data; // Store in memory
       })

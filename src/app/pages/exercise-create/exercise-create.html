@@ -19,9 +19,10 @@
 
         <div class="flex-[3_1] min-h-0 overflow-hidden" >
             <!--Input(language, isTeacher) and output-->
-            <app-editor 
+            <app-editor
                 [language]="language"
                 [options]="options"
+                [inputFiles]="editorInputFiles"
                 (filesChange)="onFilesChange($event)"
                 (compile)="onCompileRequest()"
                 (consoleMessage)="onConsoleMessage($event)"
@@ -82,6 +83,7 @@
 
         
         <app-tests
+            [inputTests]="tests"
             (testsChange)="onTestsChange($event)"
             (runTest)="onRunTest($event)"
             (consoleMessage)="onConsoleMessage($event)">
@@ -89,17 +91,19 @@
 
         <hr class="border-t-2 border-gray-300 my-2">
 
-        <app-hints 
-        (hintsChange)="onHintsChange($event)">
+        <app-hints
+            [inputHints]="hints"
+            (hintsChange)="onHintsChange($event)">
         </app-hints>
 
         <hr class="border-t-2 border-gray-300 my-2">
 
         <div class="flex gap-2">
-          <button 
-           class="w-full py-3 bg-gray-700 text-white font-bold rounded-xl  hover:bg-gray-400 cursor-pointer"
-           (click)="onCreateExercise()">
-              CRÉER
+          <button
+           class="w-full py-3 bg-gray-700 text-white font-bold rounded-xl hover:bg-gray-400 cursor-pointer disabled:opacity-50"
+           [disabled]="isLoading"
+           (click)="onSubmitExercise()">
+              {{ isEditMode ? 'MODIFIER' : 'CREER' }}
           </button>
         </div>
 

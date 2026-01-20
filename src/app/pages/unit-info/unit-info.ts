@@ -1,6 +1,6 @@
 import { Component, Input, numberAttribute, SimpleChanges} from '@angular/core';
 import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
-import { UnitNav, } from '../../models/exercise.models';
+import { UnitNav, UnitUpdatePayload, CourseUpdatePayload, CourseCreatePayload } from '../../models/exercise.models';
 import { CourseDisplay } from '../../components/course-display/course-display';
 import { UnitUpdateService } from '../../services/unitUpdateService/unit-update-service';
 import { FormsModule } from '@angular/forms';
@@ -23,7 +23,9 @@ export class UnitInfo {
   isAddingCourse = false; // Show or not the temporary form
   isCreating = false;
 
-  errorMessage: string = '';
+  errorMessage = '';
+
+  errorMessageUnit = '';
 
   newCourse = {
     name: '',
@@ -31,6 +33,17 @@ export class UnitInfo {
     difficulty: 1,
     visibility: 'private'
   };
+
+  // Unit edit state
+  isEditingUnit = false;
+  isSavingUnit = false;
+  editedUnit = {
+    name: '',
+    description: '',
+    difficulty: 1,
+    visibility: 'private'
+  };
+
   constructor (private navigationInformation: NaviagtionInfomration, private unitUpdateService : UnitUpdateService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -83,7 +96,7 @@ export class UnitInfo {
     }
     this.isCreating = true;
 
-    const payload = { ...this.newCourse, unit_id: this.unitId, author_id : this.author_id};
+    const payload : CourseCreatePayload = { ...this.newCourse, unit_id: this.unitId, author_id : this.author_id};
     console.log(payload);
 
     this.unitUpdateService.createCourse(payload).subscribe({
@@ -130,7 +143,7 @@ export class UnitInfo {
         if (this.unitData) {
           // Find the specific course that contains the deleted exercise
           const courseToUpdate = this.unitData.courses.find(c => c.id === payload.courseId);
-          
+
           if (courseToUpdate) {
             // Remove the exercise from the list by filtering it out
             courseToUpdate.exercises = courseToUpdate.exercises.filter(e => e.id !== payload.exerciseId);
@@ -140,6 +153,103 @@ export class UnitInfo {
       error: (err) => {
         console.error("Erreur suppression exercice", err);
         alert("Erreur lors de la suppression de l'exercice.");
+      }
+    });
+  }
+
+
+  startEditingUnit(): void {
+    if (this.unitData) {
+      this.errorMessageUnit = "";
+      this.editedUnit = {
+        name: this.unitData.name,
+        description: this.unitData.description,
+        difficulty: this.unitData.difficulty,
+        visibility: this.unitData.visibility
+      };
+      this.isEditingUnit = true;
+    }
+  }
+
+  cancelEditingUnit(): void {
+    this.isEditingUnit = false;
+    this.errorMessageUnit = "";
+  }
+
+  saveUnitChanges(): void {
+    if (!this.unitData) return;
+
+    this.errorMessageUnit = '';
+
+    if (!this.editedUnit.name || this.editedUnit.name.trim() === '') {
+        this.errorMessageUnit = "Le nom de l'unité est obligatoire.";
+        console.log("Pas de nom")
+        return; 
+    }
+
+    if (!this.editedUnit.description || this.editedUnit.description.trim() === '') {
+        this.errorMessageUnit = "La description ne peut pas être vide.";
+        return;
+    }
+
+    if (this.editedUnit.difficulty < 1 || this.editedUnit.difficulty > 5) {
+        this.errorMessageUnit = "Le niveau de difficulté doit être entre 1 et 5.";
+        return;
+    }
+
+    this.isSavingUnit = true;
+    const payload: UnitUpdatePayload = {
+      name: this.editedUnit.name,
+      description: this.editedUnit.description,
+      difficulty: this.editedUnit.difficulty,
+      visibility: this.editedUnit.visibility
+    };
+
+    this.unitUpdateService.updateUnit(this.unitData.id, payload).subscribe({
+      next: (updated) => {
+        if (this.unitData) {
+          this.unitData = {
+            ...this.unitData,
+            name: updated.name,
+            description: updated.description,
+            difficulty: updated.difficulty,
+            visibility: updated.visibility
+          };
+        }
+        this.navigationInformation.clearUnitCache();
+        this.isSavingUnit = false;
+        this.isEditingUnit = false;
+      },
+      error: (err) => {
+        console.error("Error updating unit", err);
+        alert("Erreur lors de la modification du module.");
+        this.isSavingUnit = false;
+      }
+    });
+  }
+
+
+  handleUpdateCourse(event: {courseId: number, payload: CourseUpdatePayload}): void {
+    this.unitUpdateService.updateCourse(event.courseId, event.payload).subscribe({
+      next: (updatedCourse) => {
+        if (this.unitData) {
+          const courseIndex = this.unitData.courses.findIndex(c => c.id === event.courseId);
+          if (courseIndex !== -1) {
+            this.unitData.courses[courseIndex] = {
+              ...this.unitData.courses[courseIndex],
+              name: updatedCourse.name,
+              description: updatedCourse.description,
+              difficulty: updatedCourse.difficulty,
+              visibility: updatedCourse.visibility
+            };
+            this.unitData = { ...this.unitData };
+          }
+        }
+        this.navigationInformation.clearUnitCache();
+      },
+      error: (err) => {
+        console.error("Error updating course", err);
+        alert("Erreur lors de la modification du cours.");
       }
     });
   }

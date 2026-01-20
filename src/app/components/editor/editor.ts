@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, Input, SimpleChanges} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { File, EditorConfig, TEACHER_CONFIG } from '../../models/exercise.models';
+import { CODE_TEMPLATES, MAIN_FILENAMES } from '../../models/main-templates';
 
 const LANGUAGE_EXTENSIONS: Record<string, string> = {
   c: 'c',
@@ -41,30 +42,58 @@ export class Editor {
   ngOnChanges(changes: SimpleChanges): void {
     // If the editor receives files, display them
     if (changes['inputFiles'] ) {
-      console.log(this.inputFiles);
-       this.rebuildFilesFromInput();
+      if (this.shouldRebuildFiles(this.inputFiles)) {
+        console.log("Rebuilding files from input...");
+        this.rebuildFilesFromInput();
+      }
     }
+
+    if (changes['language'] && !changes['language'].isFirstChange() && this.options.canAddFiles) {
+          this.addMainTemplateForLanguage();
+      }
     // Only allow the teacher to have an open file when creating a new exercise,
     // as they won't receive initial files but can add new ones.
-    if (this.files.length === 0 && this.options.canAddFiles && !changes['inputFiles']) {
-       this.addFile("main." + this.getDefaultExtension(), true);
+    if (this.files.length === 0 && this.options.canAddFiles) {
+       this.addMainTemplateForLanguage();
     }
   }
 
+  private shouldRebuildFiles(newFiles: File[]): boolean {
+      // If the length changes, we rebuilt (public exercise with 3 files -> private exercise with 0 file)
+      if (newFiles.length !== this.files.length) return true;
+      
+      // both empty, we don't rebuilt
+      if (newFiles.length === 0) return false;
+      
+      // same lentgh, we compare the ids
+      return newFiles[0].id !== this.files[0].id;
+  }
+  
   private rebuildFilesFromInput(): void {
-    // Reset the editor (in case for the futurrr)
-    this.files = [];
-    if(this.inputFiles.length == 0) {return} // When a exercise is private, don't display file
+    if (!this.inputFiles || this.inputFiles.length === 0) { // When a exercise is private, clean the editor
+        this.files = [];
+        this.activeFileId = null;
+        return; 
+    } 
 
-    const newFiles = this.inputFiles.map(file => ({
+    this.files  = this.inputFiles.map(file => ({
         ...file,  
         id: file.id ?? this.generateTempId()
       }));
-
-    // Add the files in the list of this editor
-    this.files= newFiles;
-
     this.setActiveFile(this.files[0]);
+
+  }
+
+  private addMainTemplateForLanguage(): void {
+      const defaultName = MAIN_FILENAMES[this.language] ?? 'main.txt';
+      const templateContent = CODE_TEMPLATES[this.language] ?? '';
+
+      // Verification for a duplicate  
+      const alreadyExists = this.files.some(f => f.name + '.' + f.extension === defaultName);
+
+      if (!alreadyExists) {
+          this.addFile(defaultName, true, templateContent);
+      }
   }
 
   // Files created in the editor have a negative ID. 
@@ -81,7 +110,7 @@ export class Editor {
     }
 
     // If newName is null or undefined, used default name else use name
-    const nameToUse = newName ?? `file${Math.abs(this.tempIdCounter + 1)}.${this.getDefaultExtension()}`;
+    const nameToUse = newName ?? `file${this.files.length + 1}.${this.getDefaultExtension()}`;
     const { name, extension } = this.parseFileName(nameToUse);
 
     const newFile: File = {
@@ -122,7 +151,7 @@ export class Editor {
     }
 
     this.activeFile.content = newContent;
-    this.emitFiles();
+    this.emitFiles(); //don't emit for each caractere 
   }
 
   private parseFileName(fullName: string): { name: string; extension: string } {
@@ -242,7 +271,7 @@ export class Editor {
       ...(f.id && f.id > 0 ? { id: f.id } : {})
     }));
 
-    this.consoleMessage.emit(JSON.stringify(payload));
+    //this.consoleMessage.emit(JSON.stringify(payload)); // For testing
     this.filesChange.emit(payload);
   }
 }

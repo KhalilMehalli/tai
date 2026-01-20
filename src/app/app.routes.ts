@@ -8,8 +8,10 @@ import { UnitInfo } from './pages/unit-info/unit-info';
 export const routes: Routes = [
     { path: 'login', component: Login },
     { path: 'dashboard', component: Dashboard },
-    { path: 'exercise-create/:unitId/:courseId', component: ExerciseCreate }, 
+    { path: 'exercise-create/:unitId/:courseId', component: ExerciseCreate },
+    { path: 'exercise-edit/:unitId/:courseId/:exerciseId', component: ExerciseCreate },
     { path: 'unit/:unitId', component: UnitInfo },
     { path: 'unit/:unitId/course/:courseId/exercise/:exerciseId', component: ExerciseRun },
-    { path: '', redirectTo: '/unit/1', pathMatch: 'full' }
+    { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+    { path: '**', redirectTo: '/dashboard' }
 ];

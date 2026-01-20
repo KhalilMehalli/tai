@@ -46,6 +46,12 @@ export interface Exercise {
   tests: Test[];
   hints: Hint[];
 }
+
+// Full exercise update (replaces files, tests, hints entirely)
+export interface ExerciseFull extends Exercise {
+  id: number;
+}
+
 //
 
 export interface CodePayload {
@@ -156,3 +162,30 @@ export interface CourseCreatePayload {
   unit_id: number;
   author_id: number;
 }
+
+// Unit
+
+export interface UnitCreatePayload {
+  name: string;
+  description: string;
+  difficulty: number;
+  visibility: string;
+  author_id: number;
+}
+
+export interface UnitUpdatePayload {
+  name?: string;
+  description?: string;
+  difficulty?: number;
+  visibility?: string;
+}
+
+export interface CourseUpdatePayload {
+  name?: string;
+  description?: string;
+  difficulty?: number;
+  visibility?: string;
+}
+
+
+

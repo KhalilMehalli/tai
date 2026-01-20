@@ -1,10 +1,11 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CourseNav } from '../../models/exercise.models';
+import { FormsModule } from '@angular/forms';
+import { CourseNav, CourseUpdatePayload } from '../../models/exercise.models';
 
 @Component({
   selector: 'app-course-display',
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule],
   templateUrl: './course-display.html',
   styleUrl: './course-display.css',
 })
@@ -14,23 +15,76 @@ export class CourseDisplay {
 
   @Output() deleteCourseRequest = new EventEmitter<number>();
   @Output() deleteExerciseRequest = new EventEmitter<{courseId: number, exerciseId: number}>();
+  @Output() updateCourseRequest = new EventEmitter<{courseId: number, payload: CourseUpdatePayload}>();
+
+  // Course edit state
+  editingCourseId: number | null = null;
+  editedCourse = {
+    name: '',
+    description: '',
+    difficulty: 1,
+    visibility: 'private'
+  };
+
+  errorMessage = '';
 
   onDeleteClick(courseId: number) {
     // "confirm" function will open a pop up and "ask" a question to the user
     if (confirm('Voulez-vous vraiment supprimer ce cours et tous ses exercices ?')) {
-      this.deleteCourseRequest.emit(courseId); 
-      console.log("oui")
-      return;
+      this.deleteCourseRequest.emit(courseId);
     }
   }
 
   onDeleteExerciseClick(courseId: number, exerciseId: number, event: Event) {
-    // IMPORTANT : Empêche le clic de "remonter" vers la balise <a> et de changer de page
+    // Don' allow the click to propagate 
     event.preventDefault();
     event.stopPropagation();
 
     if (confirm('Voulez-vous vraiment supprimer cet exercice ?')) {
       this.deleteExerciseRequest.emit({ courseId, exerciseId });
     }
+  }
+
+  // Course Edit Methods
+  startEditingCourse(course: CourseNav, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.editingCourseId = course.id;
+    this.editedCourse = {
+      name: course.name,
+      description: course.description,
+      difficulty: course.difficulty,
+      visibility: course.visibility
+    };
+  }
+
+  cancelEditingCourse(): void {
+    this.editingCourseId = null;
+    this.errorMessage = '';
+  }
+
+  saveCourseChanges(courseId: number): void {
+    this.errorMessage = '';
+
+    if (!this.editedCourse.name || this.editedCourse.name.trim() === '') {
+        this.errorMessage = "Le nom du cours est obligatoire.";
+        console.log("Pas de nom")
+        return; 
+    }
+
+    if (!this.editedCourse.description || this.editedCourse.description.trim() === '') {
+        this.errorMessage = "La description ne peut pas être vide.";
+        return;
+    }
+
+    if (this.editedCourse.difficulty < 1 || this.editedCourse.difficulty > 5) {
+        this.errorMessage = "Le niveau de difficulté doit être entre 1 et 5.";
+        return;
+    }
+    this.updateCourseRequest.emit({
+      courseId,
+      payload: { ...this.editedCourse }
+    });
+    this.editingCourseId = null;
   }
 }
