@@ -16,7 +16,7 @@ class ParsedResult:
 
 
 COMMENT_SYMBOLS = {
-    "c":  r"//", "h" : r"//"
+    "c":  r"//", "h" : r"//", "java" : r"//", "py" : "#"
 }
 
 
@@ -53,7 +53,8 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
     comment = COMMENT_SYMBOLS.get(extension)
     if comment is None:
-        raise ValueError(f"Cette extension n'a pas de commentaire attitré (//, #) dans le backend: {extension}")
+        # This file cannot have a markers (ex : txt file)
+        return ParsedResult(template=full_content, markers=[])
     
     # Regex explanation:
     # {comment}\s*<complete\s*id="(?P<id>.*?)"> Start when it find a marker and capture the name of the id 
@@ -85,6 +86,8 @@ def extract_teacher_markers_from_code(full_content: str, extension : str):
 
     # re.sub runs the replacement_logic function for every match found
     template_content = re.sub(pattern, replacement_logic, full_content, flags=re.DOTALL)
+
+    print(template_content)
     
     return ParsedResult(template=template_content, markers=markers_found)
 
@@ -97,7 +100,7 @@ def inject_markers_into_template(template_content: str, markers: List[MarkerData
 
     comment = COMMENT_SYMBOLS.get(extension)
 
-    # List -> Dict
+    # List -> Dict, faster to find the content of the markers with the id
     marker_map = {str(m.id): m.content for m in markers}
 
     pattern = rf'{comment} TODO: (?P<id>.*)\n\n\s*{comment} END TODO: (?P=id)'
@@ -112,7 +115,7 @@ def inject_markers_into_template(template_content: str, markers: List[MarkerData
     
     return full_code
 
-def extract_student_solutions(full_content: str, extension : str) -> List[MarkerData]:
+def extract_student_solutions(full_content: str, extension : str, expected_markers_ids: List[str] = None) -> List[MarkerData]:
     """
     Parses the student code and extract his solutions.
     """
@@ -121,14 +124,50 @@ def extract_student_solutions(full_content: str, extension : str) -> List[Marker
     pattern = rf'{comment} TODO: (?P<id>.*)\n(?P<content>.*?)(?=\n\s*{comment} END TODO: (?P=id))'
 
     markers_found: List[MarkerData] = []
+    # Security to check if all the markers are here
+    found_ids = set()
 
     for match in re.finditer(pattern, full_content, flags=re.DOTALL):
         m_id = match.group("id").strip()
         content = match.group("content")
 
         markers_found.append(MarkerData(id=m_id, content=content))
+        found_ids.add(m_id)
+
+    if expected_markers_ids:
+        missing_ids = set(expected_markers_ids) - found_ids
+
+        # If an markers is not found
+        if missing_ids:
+            raise ValueError(
+                f"Les balises suivantes sont manquantes ou altérées : {', '.join(missing_ids)}"
+            )
 
     return markers_found
+
+def reconstruct_file_with_markers(template: str, markers: list, extension: str) -> str:
+    """
+    Reconstruct the original teacher code from template + markers.
+    Replaces '// TODO: id ... // END TODO: id' with '// <complete id="id">content// </complete>'
+    """
+    comment = COMMENT_SYMBOLS.get(extension)
+    if comment is None:
+        return template
+
+    # Create a map of marker_id -> solution_content
+    marker_map = {m.marker_id: m.solution_content for m in markers}
+
+    # Pattern to match TODO markers in template
+    pattern = rf'{comment} TODO: (?P<id>.*)\n\n\s*{comment} END TODO: (?P=id)'
+
+    def replacement_logic(match):
+        m_id = match.group("id").strip()
+        content = marker_map.get(m_id, "")
+        # Reconstruct the original <complete> tag format
+        return f'{comment} <complete id={m_id}>{content}{comment} </complete>'
+
+    reconstructed = re.sub(pattern, replacement_logic, template)
+    return reconstructed
 
 if __name__ == "__main__":
 
