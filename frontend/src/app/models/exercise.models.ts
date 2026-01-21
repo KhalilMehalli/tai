@@ -85,7 +85,19 @@ export interface TestRespond {
   id: number;
   actual_output: string;  // Student output
   status: 'pending' | 'success' | 'failure';
-  error_log: string; 
+  error_log: string;
+}
+
+// Structure of error response data from the backend when a student do an exercise.
+
+export interface ErrorResponseData {
+  format_error?: string;
+  stderr?: string;
+  exit_code?: number;
+}
+
+export interface TestRespondList {
+  test_responses: TestRespond[];
 }
 
 // EDITOR CONFIGURATION 

@@ -6,14 +6,11 @@ import { Editor} from '../../components/editor/editor';
 import { Console } from '../../components/console/console';
 import { TestsDisplay } from '../../components/testsDisplay/tests-display/tests-display';
 import { ExerciceStudentService } from '../../services/exerciseStudentService/exercise-student-service';
-import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
-import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, Test, TestDisplay, StudentSubmissionPayload, RunResponse, TestRespond, UnitNav} from '../../models/exercise.models';
+import { NavigationInformationService } from '../../services/navigationInformation/navigation-information-service';
+import { EditorConfig, STUDENT_CONFIG, Exercise, File, Hint, TestDisplay, StudentSubmissionPayload, UnitNav, ErrorResponseData, TestRespondList } from '../../models/exercise.models';
 import { HintsDisplay } from '../../components/hintsDisplay/hints-display/hints-display';
 import { SideBar } from '../../components/side-bar/side-bar';
-
-interface TestRespondList {
-  test_responses : TestRespond[];
-}
+import { appendConsoleMessage } from '../../utils/utils';
 
 @Component({
   selector: 'app-exercise-run',
@@ -45,9 +42,10 @@ export class ExerciseRun {
   //Data for the SideB
   unitNavigation: UnitNav | null = null;
 
-  constructor(private exerciseStudentService: ExerciceStudentService,
-              private navigationInformation : NaviagtionInfomration
-  ){}
+  constructor(
+    private exerciseStudentService: ExerciceStudentService,
+    private navigationInformation: NavigationInformationService
+  ) {}
 
   
   ngOnChanges(changes: SimpleChanges): void {
@@ -84,7 +82,6 @@ export class ExerciseRun {
     
     this.exerciseStudentService.getExerciseForStudent(UnitId, CourseId, ExerciseId).subscribe({
       next: (res) => {
-        this.onConsoleMessage(JSON.stringify(res));
         this.exerciseData = res.data;
         this.files = this.exerciseData.files;
         this.hints = this.exerciseData.hints;
@@ -102,24 +99,17 @@ export class ExerciseRun {
 
       },
       error: (err) => {
-        console.log('HTTP error complet :', err);
-        console.log('err.error :', err.error);
-        this.onConsoleMessage(err.error.detail);
+        this.onConsoleMessage(err.error?.detail ?? 'Erreur lors du chargement');
       },
     });
   }
 
-
-  onConsoleMessage(msg: String) : void{ // Add an new ligne of command in the console 
-    const line = String(msg);
-    this.consoleText = this.consoleText
-      ? this.consoleText + '\n>' + line
-      : '>' + line;
+  onConsoleMessage(msg: string): void {
+    this.consoleText = appendConsoleMessage(this.consoleText, msg);
   }
 
   onFilesChange(files: File[]) : void {
     this.files = files;
-    console.log(files);
   }
 
   // Change the tab between console, tests and hints tab
@@ -157,10 +147,8 @@ export class ExerciseRun {
             }
           },
           error: (err) => {
-            console.log('HTTP error complet :', err);
-            console.log('err.error :', err.error);
-            this.onConsoleMessage(err.error.detail);
-            this.markAllTestAsFail('Erreur')
+            this.onConsoleMessage(err.error?.detail ?? 'Erreur lors de la soumission');
+            this.markAllTestAsFail('Erreur');
           }
         });
   }
@@ -174,38 +162,40 @@ private markAllTestAsFail(text :string) : void {
     error_log: undefined
   }));
 }
-private handleErrorResponse(serverMessage: string, data: any): void {
+
+// Handles error responses from the backend during student submission.
+// Displays appropriate error messages in console and marks tests as failed.
+private handleErrorResponse(serverMessage: string, data: ErrorResponseData): void {
   this.setActiveTab('console');
-  
+
   // Format error
   if (data.format_error) {
-      const cleanMessage = data.format_error; 
+      const cleanMessage = data.format_error;
       this.onConsoleMessage(`${serverMessage} :\n${cleanMessage}`);
-      
-      this.markAllTestAsFail('Format Invalide'); 
+      this.markAllTestAsFail('Format Invalide');
       return;
   }
 
-  // CCompilation error
+  // Compilation error
   if (data.stderr) {
       const errorMsg = data.stderr;
       const exitCode = data.exit_code;
       this.onConsoleMessage(`${serverMessage} (Code ${exitCode}) :\n${errorMsg}`);
-
       this.markAllTestAsFail('Erreur Compilation');
       return;
   }
 
-  // Other error 
+  // Other error
   this.onConsoleMessage(`Erreur : ${serverMessage}`);
   this.markAllTestAsFail('Erreur');
-
 }
 
 
+//  Processes successful grading results from the backend.
+//  Updates test display states with actual outputs and pass/fail status.
 private handleGradingSuccess(data: TestRespondList): void {
     this.setActiveTab('tests');
-    this.onConsoleMessage('Correction terminée. Voir l\'onglet Résultats.');
+    this.onConsoleMessage('Correction terminée. Voir l\'onglet Tests.');
 
     // Search the testRespond for each test
     this.tests = this.tests.map(existingTest => {

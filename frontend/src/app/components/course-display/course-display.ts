@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CourseNav, CourseUpdatePayload } from '../../models/exercise.models';
+import { validateEntityForm } from '../../utils/utils';
 
 @Component({
   selector: 'app-course-display',
@@ -66,21 +67,12 @@ export class CourseDisplay {
   saveCourseChanges(courseId: number): void {
     this.errorMessage = '';
 
-    if (!this.editedCourse.name || this.editedCourse.name.trim() === '') {
-        this.errorMessage = "Le nom du cours est obligatoire.";
-        console.log("Pas de nom")
-        return; 
+    const validationError = validateEntityForm(this.editedCourse);
+    if (validationError) {
+      this.errorMessage = validationError;
+      return;
     }
 
-    if (!this.editedCourse.description || this.editedCourse.description.trim() === '') {
-        this.errorMessage = "La description ne peut pas être vide.";
-        return;
-    }
-
-    if (this.editedCourse.difficulty < 1 || this.editedCourse.difficulty > 5) {
-        this.errorMessage = "Le niveau de difficulté doit être entre 1 et 5.";
-        return;
-    }
     this.updateCourseRequest.emit({
       courseId,
       payload: { ...this.editedCourse }

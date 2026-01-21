@@ -4,10 +4,11 @@ import { Editor } from '../../components/editor/editor';
 import { Tests } from '../../components/tests/tests';
 import { Hints } from '../../components/hints/hints';
 import { File, Hint, Test, Exercise, EditorConfig, TEACHER_CONFIG, CodePayload, ExerciseFull } from '../../models/exercise.models';
+import { appendConsoleMessage } from '../../utils/utils';
 import { Console } from '../../components/console/console';
 import { FormsModule } from '@angular/forms';
 import { ExerciceTeacherService } from '../../services/exerciceTeacherService/exercice-teacher-service';
-import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
+import { NavigationInformationService } from '../../services/navigationInformation/navigation-information-service';
 
 @Component({
   selector: 'app-exercise-create',
@@ -52,9 +53,10 @@ export class ExerciseCreate{
   isEditMode = false;
   isLoading = false;
 
-  constructor(private exerciceTeacherService: ExerciceTeacherService,
-              private navigationInformation: NaviagtionInfomration,
-              private router: Router
+  constructor(
+    private exerciceTeacherService: ExerciceTeacherService,
+    private navigationInformation: NavigationInformationService,
+    private router: Router
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -91,7 +93,6 @@ export class ExerciseCreate{
 
         this.isLoading = false;
         this.onConsoleMessage(`Exercice charge avec succes. `);
-        console.log(exercise.files);
       },
       error: (err) => {
         this.isLoading = false;
@@ -102,24 +103,18 @@ export class ExerciseCreate{
 
   onFilesChange(files: File[]) : void {
     this.files = files;
-    console.log(files);
   }
 
   onTestsChange(tests: Test[]) : void{
     this.tests = tests;
-    console.log(tests);
   }
 
   onHintsChange(hints: Hint[]) : void {
     this.hints = hints;
-    console.log(hints);
   }
 
-  onConsoleMessage(msg: String) : void {
-    const line = String(msg);
-    this.consoleText = this.consoleText
-      ? this.consoleText + '\n>' + line
-      : '>' + line;
+  onConsoleMessage(msg: string): void {
+    this.consoleText = appendConsoleMessage(this.consoleText, msg);
   }
 
   onCompileRequest(): void {
@@ -187,6 +182,10 @@ export class ExerciseCreate{
     }
   }
 
+
+// Creates a new exercise with all associated files, tests, and hints.
+// Sends complete exercise payload to backend and navigates to unit page on success.
+
   private createExercise(): void {
     const payload: Exercise = {
       course_id: this.courseId,
@@ -221,6 +220,9 @@ export class ExerciseCreate{
     });
   }
 
+
+// Updates an existing exercise with modified files, tests, and hints. Replaces all associated data. 
+// Navigates back to unit page after successful update.
   private updateExercise(): void {
     if (!this.exerciseId) return;
 
@@ -253,8 +255,7 @@ export class ExerciseCreate{
         }, 2000);
       },
       error: (err) => {
-        this.onConsoleMessage( 'Erreur lors de la mise a jour');
-        console.log(err);
+        this.onConsoleMessage('Erreur lors de la mise a jour');
       },
     });
   }

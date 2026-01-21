@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build outputs
+dist/
+.angular/
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Test files
+coverage/
+*.spec.ts
+
+# Environment files (use Docker env vars instead)
+.env*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
+*.tar.gz

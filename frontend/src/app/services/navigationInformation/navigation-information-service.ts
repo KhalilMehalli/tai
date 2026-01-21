@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { UnitSummary, UnitNav} from '../../models/exercise.models';
-import { environment } from '../../../environments/environment.development'; // On importe l'environnement
+import { UnitSummary, UnitNav } from '../../models/exercise.models';
+import { environment } from '../../../environments/environment.development';
+
 
 @Injectable({
   providedIn: 'root',
 })
-export class NaviagtionInfomration {
+export class NavigationInformationService {
 
   // Stores the ID and structure of the last loaded unit to avoid redundant API calls.
   private UnitId: number | null = null;

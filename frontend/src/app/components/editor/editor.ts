@@ -43,7 +43,6 @@ export class Editor {
     // If the editor receives files, display them
     if (changes['inputFiles'] ) {
       if (this.shouldRebuildFiles(this.inputFiles)) {
-        console.log("Rebuilding files from input...");
         this.rebuildFilesFromInput();
       }
     }
@@ -58,13 +57,14 @@ export class Editor {
     }
   }
 
+  // Determines if files should be rebuilt when input changes.
   private shouldRebuildFiles(newFiles: File[]): boolean {
       // If the length changes, we rebuilt (public exercise with 3 files -> private exercise with 0 file)
       if (newFiles.length !== this.files.length) return true;
-      
+
       // both empty, we don't rebuilt
       if (newFiles.length === 0) return false;
-      
+
       // same lentgh, we compare the ids
       return newFiles[0].id !== this.files[0].id;
   }
@@ -154,18 +154,22 @@ export class Editor {
     this.emitFiles(); //don't emit for each caractere 
   }
 
+
+  // Parses a full filename into name and extension components.
+  // parseFileName("main.c")      // { name: "main", extension: "c" }
+  // parseFileName("README")      // { name: "README", extension: "" }
   private parseFileName(fullName: string): { name: string; extension: string } {
-    // Assumes the input 'fullName' has already been trimmed 
+    // Assumes the input 'fullName' has already been trimmed
     const lastDot = fullName.lastIndexOf('.');
 
-    // No dot found, dot is at the very beginning or dot is at the very end 
+    // No dot found, dot is at the very beginning or dot is at the very end
     // return the name with no file extension.
     if (lastDot <= 0 || lastDot === fullName.length - 1) {
       return { name: fullName, extension: '' };
     }
 
-    const name = fullName.slice(0, lastDot); 
-    const extension = fullName.slice(lastDot + 1); 
+    const name = fullName.slice(0, lastDot);
+    const extension = fullName.slice(lastDot + 1);
 
     return { name, extension };
 }

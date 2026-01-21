@@ -1,5 +1,5 @@
-import { Component, Input, SimpleChanges } from '@angular/core';
-import type { TestDisplay, Test } from '../../../models/exercise.models';
+import { Component, Input } from '@angular/core';
+import type { TestDisplay } from '../../../models/exercise.models';
 
 @Component({
   selector: 'app-tests-display',

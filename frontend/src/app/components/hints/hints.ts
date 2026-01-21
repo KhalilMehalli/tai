@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Output, Input, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Hint } from '../../models/exercise.models';
 

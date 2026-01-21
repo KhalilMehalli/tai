@@ -1,6 +1,7 @@
 import { Component, Input, numberAttribute, SimpleChanges} from '@angular/core';
-import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
+import { NavigationInformationService } from '../../services/navigationInformation/navigation-information-service';
 import { UnitNav, UnitUpdatePayload, CourseUpdatePayload, CourseCreatePayload } from '../../models/exercise.models';
+import { validateEntityForm } from '../../utils/utils';
 import { CourseDisplay } from '../../components/course-display/course-display';
 import { UnitUpdateService } from '../../services/unitUpdateService/unit-update-service';
 import { FormsModule } from '@angular/forms';
@@ -44,7 +45,7 @@ export class UnitInfo {
     visibility: 'private'
   };
 
-  constructor (private navigationInformation: NaviagtionInfomration, private unitUpdateService : UnitUpdateService) {}
+  constructor(private navigationInformation: NavigationInformationService, private unitUpdateService: UnitUpdateService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
       if (this.unitId) {
@@ -76,28 +77,19 @@ export class UnitInfo {
     this.errorMessage = '';
   }
 
+// Submits a new course to the backend after validation under the current unit
+
   submitCourse() {
     this.errorMessage = '';
 
-    if (!this.newCourse.name || this.newCourse.name.trim() === '') {
-        this.errorMessage = "Le nom du cours est obligatoire.";
-        console.log("Pas de nom")
-        return; 
+    const validationError = validateEntityForm(this.newCourse);
+    if (validationError) {
+      this.errorMessage = validationError;
+      return;
     }
 
-    if (!this.newCourse.description || this.newCourse.description.trim() === '') {
-        this.errorMessage = "La description ne peut pas être vide.";
-        return;
-    }
-
-    if (this.newCourse.difficulty < 1 || this.newCourse.difficulty > 5) {
-        this.errorMessage = "Le niveau de difficulté doit être entre 1 et 5.";
-        return;
-    }
     this.isCreating = true;
-
-    const payload : CourseCreatePayload = { ...this.newCourse, unit_id: this.unitId, author_id : this.author_id};
-    console.log(payload);
+    const payload: CourseCreatePayload = { ...this.newCourse, unit_id: this.unitId, author_id: this.author_id };
 
     this.unitUpdateService.createCourse(payload).subscribe({
         next: (course) => {
@@ -181,20 +173,10 @@ export class UnitInfo {
 
     this.errorMessageUnit = '';
 
-    if (!this.editedUnit.name || this.editedUnit.name.trim() === '') {
-        this.errorMessageUnit = "Le nom de l'unité est obligatoire.";
-        console.log("Pas de nom")
-        return; 
-    }
-
-    if (!this.editedUnit.description || this.editedUnit.description.trim() === '') {
-        this.errorMessageUnit = "La description ne peut pas être vide.";
-        return;
-    }
-
-    if (this.editedUnit.difficulty < 1 || this.editedUnit.difficulty > 5) {
-        this.errorMessageUnit = "Le niveau de difficulté doit être entre 1 et 5.";
-        return;
+    const validationError = validateEntityForm(this.editedUnit);
+    if (validationError) {
+      this.errorMessageUnit = validationError;
+      return;
     }
 
     this.isSavingUnit = true;

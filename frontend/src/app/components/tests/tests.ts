@@ -48,7 +48,7 @@ export class Tests {
   private deleteTest(test: TestRow): void {
     //Removes the row
     this.tests = this.tests.filter(t => t.id !== test.id);
-    // Re calculate the position of the remaining hints
+    // Re calculate the position of the remaining tests
     this.tests.forEach((t, index) => (t.position = index));
     this.emitTests();
   }
@@ -82,8 +82,7 @@ export class Tests {
         comment: t.comment.trim(),
         position: index,
       }));
-
-    this.consoleMessage.emit(JSON.stringify(payload));
+  // this.consoleMessage.emit(JSON.stringify(payload));
     this.testsChange.emit(payload);
   }
 }

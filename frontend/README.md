@@ -1,59 +1,83 @@
-# Angular2
+# Tai - Educational Coding Platform Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
+An Angular 20 frontend application for an educational coding exercise platform. It enables "teachers" to create coding exercises and "students" to solve them with integrated code editing, testing, and progressive hints. User configuration is not implemented, every user can create, perform, and update exercises.
 
-## Development server
 
-To start a local development server, run:
+## Features
 
+### For "Teachers"
+- Create and edit coding exercises with multiple files
+- Define test cases with expected outputs
+- Add progressive hints that unlock after failed attempts
+- Real-time code compilation and test verification
+- Support for C, Java, and Python languages
+
+### For "Students"
+- Execute code against predefined test cases
+- View detailed test results and error messages
+
+## Technology Stack
+
+| Technology | Version |
+|------------|---------|
+| Angular | 20.3.0 |
+| TypeScript | 5.9.2 | 
+| TailwindCSS | 4.1.16 |
+
+
+## Installation-Start
+
+I recommend using the docker-compose file located at the root of this repository to build the project. However, if you want to start only the frontend:
 ```bash
-ng serve
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+If you run only the frontend, don't forget to also start the backend.
 
-## Code scaffolding
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Docker
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Build and run Docker Image
 
 ```bash
-ng generate --help
+docker build -t tai-frontend .
+
+docker run -p 4200:80 tai-frontend
 ```
 
-## Building
 
-To build the project run:
+## Project Architecture
 
-```bash
-ng build
 ```
+src/app/
+├── pages/                          # Route-level container components
+│   ├── dashboard/                  # Unit listing and creation
+│   ├── unit-info/                  # Unit overview with courses
+│   ├── exercise-run/               # Student exercise execution
+│   └── exercise-create/            # Teacher exercise creation/editing
+│
+├── components/                     # Reusable UI components
+│   ├── editor/                     # Code editor 
+│   ├── console/                    # Output display
+│   ├── tests/                      # Test creation (teacher)
+│   ├── testsDisplay/               # Test results (student)
+│   ├── hints/                      # Hint creation (teacher)
+│   ├── hintsDisplay/               # Progressive hint display (student)
+│   ├── side-bar/                   # Exercise navigation
+│   └── course-display/             # Course listing
+│
+├── services/    
+│   ├── exerciceTeacherService/     # Teacher API operations
+│   ├── exerciseStudentService/     # Student API operations
+│   ├── navigationInformation/      # Navigation state with caching
+│   └── unitUpdateService/          # CUD (Create Update Delete) for units/courses
+│
+├── models/
+│   ├── exercise.models.ts          # Core data models
+│   └── main-templates.ts           # Main code templates per language
+│
+└── utils/                          # Shared utility functions
+    └── utils.ts   
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

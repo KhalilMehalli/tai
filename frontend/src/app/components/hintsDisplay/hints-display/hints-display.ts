@@ -24,7 +24,6 @@ export class HintsDisplay {
         isRevealed: false // Au début, tout est caché
       }));
     }
-    console.log(this.attemptsCount);
   }
 
   revealHint(hint: HintDisplay) {

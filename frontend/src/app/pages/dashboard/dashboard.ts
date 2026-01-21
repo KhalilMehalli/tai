@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { NaviagtionInfomration } from '../../services/navigationInformation/naviagtion-infomration';
+import { NavigationInformationService } from '../../services/navigationInformation/navigation-information-service';
 import { UnitUpdateService } from '../../services/unitUpdateService/unit-update-service';
 import { UnitSummary, UnitCreatePayload } from '../../models/exercise.models';
+import { validateEntityForm } from '../../utils/utils';
 
 @Component({
   selector: 'app-dashboard',
@@ -30,7 +31,7 @@ export class Dashboard implements OnInit {
   };
 
   constructor(
-    private navigationInformation: NaviagtionInfomration,
+    private navigationInformation: NavigationInformationService,
     private unitUpdateService: UnitUpdateService
   ) {}
 
@@ -66,18 +67,9 @@ export class Dashboard implements OnInit {
   submitUnit(): void {
     this.errorMessage = '';
 
-    if (!this.newUnit.name || this.newUnit.name.trim() === '') {
-      this.errorMessage = "Le nom du module est obligatoire.";
-      return;
-    }
-
-    if (!this.newUnit.description || this.newUnit.description.trim() === '') {
-      this.errorMessage = "La description ne peut pas etre vide.";
-      return;
-    }
-
-    if (this.newUnit.difficulty < 1 || this.newUnit.difficulty > 5) {
-      this.errorMessage = "Le niveau de difficulte doit etre entre 1 et 5.";
+    const validationError = validateEntityForm(this.newUnit);
+    if (validationError) {
+      this.errorMessage = validationError;
       return;
     }
 
