@@ -195,4 +195,4 @@ def get_unit_courses_and_exercises(
 
 @app.get("/")
 def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello World Docker"}

@@ -5,7 +5,7 @@ A FastAPI backend for an educational coding exercise platform. It enables "teach
 
 ## Technology Stack
 
-- **Framework:** FastAPI (Python 3.10+)
+- **Framework:** FastAPI (Python 3.10)
 - **Database:** PostgreSQL with SQLAlchemy ORM
 - **Validation:** Pydantic v2
 - **Migrations:** Alembic
@@ -18,7 +18,7 @@ I recommend using the docker-compose file located at the root of this repository
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.10
 - PostgreSQL 13+
 - Compilers: gcc, javac, python3
 

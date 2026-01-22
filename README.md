@@ -64,7 +64,7 @@ docker-compose up
 | Component | Technology |
 |-----------|------------|
 | Frontend | Angular 20, TypeScript, TailwindCSS |
-| Backend | FastAPI, Python 3.11, SQLAlchemy |
+| Backend | FastAPI, Python 3.10, SQLAlchemy |
 | Database | PostgreSQL 15 |
 | Compilers | GCC, OpenJDK 17, Python 3 |
 
