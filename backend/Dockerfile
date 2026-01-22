@@ -23,4 +23,4 @@ COPY alembic.ini .
 EXPOSE 8000
 
 # Run FastAPI
-CMD ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]

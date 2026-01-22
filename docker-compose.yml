@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: tai_postgres
+    environment:
+      POSTGRES_USER: tai_user
+      POSTGRES_PASSWORD: tai_pass
+      POSTGRES_DB: tai_db
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # Uncomment the line below to enable data persistence between restarts
+      # - postgres_data:/var/lib/postgresql/data
+
+    healthcheck: # Assure that postgresql have created the db and not just the image is created (with deponds_on only)
+      test: ["CMD-SHELL", "pg_isready -U tai_user -d tai_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - tai_network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: tai_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgresql+psycopg2://tai_user:tai_pass@postgres:5432/tai_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tai_network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: tai_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - tai_network
+
+networks:
+  tai_network:
+    driver: bridge
+
+# Uncomment below to enable data persistence
+# volumes:
+#   postgres_data:

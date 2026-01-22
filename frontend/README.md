@@ -1,20 +1,8 @@
 # Tai - Educational Coding Platform Frontend
 
-An Angular 20 frontend application for an educational coding exercise platform. It enables "teachers" to create coding exercises and "students" to solve them with integrated code editing, testing, and progressive hints. User configuration is not implemented, every user can create, perform, and update exercises.
+An Angular 20 frontend application for an educational coding exercise platform. It enables "teachers" to create coding exercises and "students" to solve them with integrated code editing, testing, and progressive hints. 
 
 
-## Features
-
-### For "Teachers"
-- Create and edit coding exercises with multiple files
-- Define test cases with expected outputs
-- Add progressive hints that unlock after failed attempts
-- Real-time code compilation and test verification
-- Support for C, Java, and Python languages
-
-### For "Students"
-- Execute code against predefined test cases
-- View detailed test results and error messages
 
 ## Technology Stack
 
