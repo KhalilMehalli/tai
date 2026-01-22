@@ -1,0 +1,26 @@
+FROM python:3.11-slim-bookworm
+
+# Install compilers: GCC, Java JDK, and build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    openjdk-17-jdk-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
+
+# Expose port
+EXPOSE 8000
+
+# Run FastAPI
+CMD ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
