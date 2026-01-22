@@ -1,16 +1,23 @@
+"""
+Database configuration and session management.
+
+This module sets up the SQLAlchemy engine and provides the database
+session dependency for FastAPI endpoints.
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
 
-# Create the engine sqlAlchemy to communicate with postgresql
+# Create the SQLAlchemy engine to communicate with PostgreSQL
 engine = create_engine(settings.DB_URL)
 
-# Each API requets will have it's own session
+# Each API request gets its own session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Parent classe which all my models (tables) will inherit.
-# Allow sqlAlchemy to know which classes correspond to SQL tables
+# Base class for all ORM models (tables)
+# SQLAlchemy uses this to track which classes correspond to database tables
 Base = declarative_base()
 
 

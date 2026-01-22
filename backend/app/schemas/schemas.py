@@ -3,7 +3,7 @@ from typing import List
 from app.core.enums import Extension, Language, Visibility, TestStatus
 
 
-# The composition of an exercise 
+# Exercise composition schemas
 
 class FileCreate(BaseModel):
     name: str # "main"
@@ -84,7 +84,7 @@ class ExerciseFull(BaseModel):
 class Exercise(ExerciseFullCreate):
     id: int
 
-# Type for teacher
+# Teacher compilation/testing schemas
 
 class CompileRequest(BaseModel):
     files: List[FileCreate]
@@ -94,7 +94,7 @@ class TestRunRequest(CompileRequest):
     argv: str 
 
 
-# Payload front will send when student test his code
+# Student submission schemas
 
 class StudentSubmissionPayload(BaseModel):
     user_id: int
@@ -129,7 +129,8 @@ class UnitSummary(BaseNav):
     pass
 
 
-# Creation course and unit from the front 
+# Creation schemas for units and courses
+
 class CourseCreate(BaseModel):
   name: str
   description: str
@@ -146,7 +147,7 @@ class UnitCreate(BaseModel):
     visibility: Visibility
     author_id: int
 
-# Update schemas
+# Update schemas (partial updates)
 
 class UnitUpdate(BaseModel):
     name: str | None = None
@@ -159,31 +160,3 @@ class CourseUpdate(BaseModel):
     description: str | None = None
     difficulty: int | None = Field(None, ge=1, le=5)
     visibility: Visibility | None = None
-
-"""
-# Full exercise update (replaces files, tests, hints entirely)
-class ExerciseFullUpdate(BaseModel):
-    name: str
-    description: str
-    difficulty: int = Field(..., ge=1, le=5)
-    visibility: Visibility
-    language: Language
-    files: List[FileCreate]
-    tests: List[TestCaseCreate]
-    hints: List[HintCreate]
-
-
-# Response for teacher getting exercise for editing (with reconstructed files)
-class ExerciseForTeacher(BaseModel):
-    id: int
-    course_id: int
-    name: str
-    description: str
-    visibility: Visibility
-    language: Language
-    difficulty: int = Field(..., ge=1, le=5)
-    position: int
-    files: List[FileCreate]  # Files with reconstructed content (markers included)
-    tests: List[Test]
-    hints: List[Hint]
-"""

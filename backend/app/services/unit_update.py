@@ -1,28 +1,36 @@
-from fastapi import  HTTPException, status
-from app.db.models import UnitModel, CourseModel, ExerciseModel
+"""
+Unit and Course C"R"UD service.
 
+This module provides create, update, and delete methods for
+units, courses, and exercises.
+"""
+
+from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from app.db.models import UnitModel, CourseModel, ExerciseModel
 from app.schemas.schemas import (
-    UnitSummary, UnitNav, CourseNav, ExerciseNav, CourseCreate,
-    UnitCreate, UnitUpdate, CourseUpdate
+    UnitSummary, CourseNav,
+    CourseCreate, UnitCreate, UnitUpdate, CourseUpdate
 )
 
 
-def create_course(course_data: CourseCreate, db: Session):
+# Course methods
 
+def create_course(course_data: CourseCreate, db: Session) -> CourseNav:
     unit = db.query(UnitModel).filter(UnitModel.id == course_data.unit_id).first()
     if not unit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
-    
-    # Find the max value of  position in this unit and increment it
+
+    # Find max position and increment
     max_position = db.query(func.max(CourseModel.position))\
-    .filter(CourseModel.unit_id == course_data.unit_id)\
-    .scalar()
+        .filter(CourseModel.unit_id == course_data.unit_id)\
+        .scalar()
 
     new_position = (max_position + 1) if max_position is not None else 1
 
-    # Creation of the sqlAlchemy object 
+    # Create course record
     new_course_db = CourseModel(
         name=course_data.name,
         description=course_data.description,
@@ -34,8 +42,8 @@ def create_course(course_data: CourseCreate, db: Session):
 
     db.add(new_course_db)
     db.commit()
-    db.refresh(new_course_db) 
-    
+    db.refresh(new_course_db)
+
     return CourseNav(
         id=new_course_db.id,
         name=new_course_db.name,
@@ -43,31 +51,36 @@ def create_course(course_data: CourseCreate, db: Session):
         visibility=new_course_db.visibility,
         difficulty=new_course_db.difficulty,
         position=new_course_db.position,
-        author_id=unit.author_id, 
-        
+        author_id=unit.author_id,
         exercises=[]
     )
 
-def delete_course(course_id: int, db: Session):
-    # Find the course
+
+def delete_course(course_id: int, db: Session) -> None:
+    """
+    Delete a course and all its exercises.
+    """
     course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
 
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-    
+
     db.delete(course)
     db.commit()
-    
+
     return None
 
-def update_course(course_id: int, update_data: CourseUpdate, db: Session):
-    """Update an existing course - partial update supported"""
+
+def update_course(course_id: int, update_data: CourseUpdate, db: Session) -> CourseNav:
+    """
+    Update an existing course (partial update supported).
+    """
     course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
 
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
-    # Only update fields that are provided (not None)
+    # Only update provided fields
     update_dict = update_data.model_dump(exclude_unset=True)
     for field, value in update_dict.items():
         if value is not None:
@@ -76,7 +89,7 @@ def update_course(course_id: int, update_data: CourseUpdate, db: Session):
     db.commit()
     db.refresh(course)
 
-    # Get the unit for author_id
+    # Get unit for author_id
     unit = db.query(UnitModel).filter(UnitModel.id == course.unit_id).first()
 
     return CourseNav(
@@ -87,10 +100,17 @@ def update_course(course_id: int, update_data: CourseUpdate, db: Session):
         difficulty=course.difficulty,
         position=course.position,
         author_id=unit.author_id if unit else 0,
-        exercises=[]  # Don't reload exercises for update response
+        exercises=[]
     )
 
-def delete_exercise(exercise_id: int, db: Session):
+
+# Exercise methods
+
+def delete_exercise(exercise_id: int, db: Session) -> None:
+    """
+    Delete an exercise and all its components.
+    Cascade delete removes files, markers, tests, hints, and submissions.
+    """
     exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_id).first()
 
     if not exercise:
@@ -104,8 +124,7 @@ def delete_exercise(exercise_id: int, db: Session):
 
 # Unit methods
 
-def create_unit(unit_data: UnitCreate, db: Session):
-    """Create a new unit"""
+def create_unit(unit_data: UnitCreate, db: Session) -> UnitSummary:
     new_unit_db = UnitModel(
         name=unit_data.name,
         description=unit_data.description,
@@ -128,14 +147,16 @@ def create_unit(unit_data: UnitCreate, db: Session):
     )
 
 
-def update_unit(unit_id: int, update_data: UnitUpdate, db: Session):
-    """Update an existing unit - partial update supported"""
+def update_unit(unit_id: int, update_data: UnitUpdate, db: Session) -> UnitSummary:
+    """
+    Update an existing unit (partial update supported).
+    """
     unit = db.query(UnitModel).filter(UnitModel.id == unit_id).first()
 
     if not unit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
 
-    # Only update fields that are provided (not None)
+    # Only update provided fields
     update_dict = update_data.model_dump(exclude_unset=True)
     for field, value in update_dict.items():
         if value is not None:
@@ -154,8 +175,11 @@ def update_unit(unit_id: int, update_data: UnitUpdate, db: Session):
     )
 
 
-def delete_unit(unit_id: int, db: Session):
-    """Delete a unit and all its children (courses, exercises)"""
+def delete_unit(unit_id: int, db: Session) -> None:
+    """
+    Delete a unit and all its children.
+    Cascade delete removes all courses, exercises, and related data.
+    """
     unit = db.query(UnitModel).filter(UnitModel.id == unit_id).first()
 
     if not unit:

@@ -1,31 +1,42 @@
+"""
+Student exercise service.
+
+This module handles retrieving exercises for students and processing
+their code submissions for automated testing and grading.
+"""
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, selectinload, joinedload
-from typing import List, Tuple
 from datetime import datetime
 
-from app.db.models import ExerciseModel, ExerciseFileModel, TestCaseModel, HintModel, CourseModel, UnitModel, SubmissionHistoryModel, SubmissionMarkerModel, SubmissionResultModel, ExerciseProgressModel
+from app.db.models import (
+    ExerciseModel, ExerciseFileModel, TestCaseModel, HintModel,
+    CourseModel, SubmissionHistoryModel, SubmissionMarkerModel,
+    SubmissionResultModel, ExerciseProgressModel
+)
 from app.schemas.schemas import ExerciseFull, File, Test, Hint, StudentSubmissionPayload, TestResult
-from app.core.enums import Visibility, SubmissionStatus, ProgressStatus, Language, TestStatus
+from app.core.enums import Visibility, SubmissionStatus, ProgressStatus, TestStatus
 
 from app.utils.parsing import extract_student_solutions, inject_markers_into_template, MarkerData
 from app.services.compiler import compile_and_run_logics
 
-# ---------------- Shared helper for both get_exercise_for_student and test_student_code function -----#
+
+# Shared helpers
+
 def get_secure_exercise_or_404(db: Session, exercise_id: int) -> ExerciseModel:
     """
-    Fetches the exercise with all necessary relationships loaded.
-    Raises 404 if not found or 403 if private (and user has no access).
+    Fetch exercise with all relationships, checking visibility permissions.
+    Loads files (with markers), tests, hints, and parent course/unit in
+    optimized queries using selectinload and joinedload.
     """
-
     exercise = (
         db.query(ExerciseModel)
         .options(
-            # selectinload loads the kids of Exercise (files, hint, tests) in the same requestfor better performance
+            # selectinload for one-to-many relationships (better performance)
             selectinload(ExerciseModel.files).selectinload(ExerciseFileModel.markers),
             selectinload(ExerciseModel.tests),
             selectinload(ExerciseModel.hints),
-
-            #joinedload better for many to one relationship
+            # joinedload for many-to-one relationships
             joinedload(ExerciseModel.course).joinedload(CourseModel.unit)
         )
         .filter(ExerciseModel.id == exercise_id)
@@ -35,32 +46,35 @@ def get_secure_exercise_or_404(db: Session, exercise_id: int) -> ExerciseModel:
     if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercice introuvable"
+            detail="Exercise not found"
         )
 
+    # Check cascading visibility (exercise, course, or unit is private)
     is_private = (
-        exercise.visibility == Visibility.PRIVATE or 
-        exercise.course.visibility == Visibility.PRIVATE or 
+        exercise.visibility == Visibility.PRIVATE or
+        exercise.course.visibility == Visibility.PRIVATE or
         exercise.course.unit.visibility == Visibility.PRIVATE
     )
 
     if is_private:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Exercice, Cours ou Module privé"
+            detail="Exercise, course, or unit is private"
         )
 
     return exercise
 
 
-# ------------ Helper for get_exercise_for_student function --------------------- #
+# Helpers for get_exercise_for_student
 
-def format_files_for_student(sql_files: List[ExerciseFileModel]) -> List[File]:
-    """Transforms the files received from the DB (ExerciseFileModel) into Pydantic types (File)."""
+def format_files_for_student(sql_files: list[ExerciseFileModel]) -> list[File]:
+    """
+    Convert ExerciseFileModel objects to File schemas for students.
+    """
     formatted_files = []
-    
+
     for f in sql_files:
-        # The student don't receive the main
+        # Students don't receive the main file directly
         if f.is_main:
             continue
 
@@ -68,7 +82,7 @@ def format_files_for_student(sql_files: List[ExerciseFileModel]) -> List[File]:
             File(
                 id=f.id,
                 name=f.name,
-                content=f.template_without_marker, 
+                content=f.template_without_marker,
                 extension=f.extension,
                 is_main=f.is_main,
                 editable=f.editable,
@@ -78,8 +92,8 @@ def format_files_for_student(sql_files: List[ExerciseFileModel]) -> List[File]:
 
     return formatted_files
 
-def format_tests_for_student(sql_tests: List[TestCaseModel]) -> List[Test]:
-    """Transforms the tests received from the DB (TestCaseModel) into Pydantic types (Test)."""
+def format_tests_for_student(sql_tests: list[TestCaseModel]) -> list[Test]:
+    """Convert TestCaseModel objects to Test schemas."""
     formatted_tests = []
     for t in sql_tests:
         formatted_tests.append(
@@ -94,8 +108,8 @@ def format_tests_for_student(sql_tests: List[TestCaseModel]) -> List[Test]:
     return formatted_tests
 
 
-def format_hints_for_student(sql_hints: List[HintModel]) -> List[Hint]:
-    """Transforms the hints received from the DB (HintModel) into Pydantic types (Hint)."""
+def format_hints_for_student(sql_hints: list[HintModel]) -> list[Hint]:
+    """Convert HintModel objects to Hint schemas."""
     formatted_hints = []
     for h in sql_hints:
         formatted_hints.append(
@@ -108,17 +122,19 @@ def format_hints_for_student(sql_hints: List[HintModel]) -> List[Hint]:
         )
     return formatted_hints
 
-def get_exercise_for_student(unit_id: int, course_id: int, exercise_id: int, db: Session): 
-    """
-    Retrieves a complete exercise for a student, verifying visibility.
-    """
 
-    
+def get_exercise_for_student(unit_id: int, course_id: int, exercise_id: int, db: Session) -> dict:
+    """
+    Retrieve an exercise for a student with visibility checks.
+
+    Returns the exercise with template files (TODO placeholders instead
+    of solutions), test cases, and hints.
+
+    """
     exercise = get_secure_exercise_or_404(db, exercise_id)
 
-    
     exercise_detail = ExerciseFull(
-        id=exercise.id, 
+        id=exercise.id,
         course_id=exercise.course_id,
         name=exercise.name,
         description=exercise.description,
@@ -126,70 +142,84 @@ def get_exercise_for_student(unit_id: int, course_id: int, exercise_id: int, db:
         language=exercise.language,
         difficulty=exercise.difficulty,
         position=exercise.position,
-        
-        files= format_files_for_student(exercise.files),
-        tests= format_tests_for_student(exercise.tests),
-        hints= format_hints_for_student(exercise.hints)
+        files=format_files_for_student(exercise.files),
+        tests=format_tests_for_student(exercise.tests),
+        hints=format_hints_for_student(exercise.hints)
     )
 
     print("ok")
-    
+
     return {
-        "status" : True, 
-        "message" : "Exercice trouvé.",
+        "status": True,
+        "message": "Exercise found.",
         "data": exercise_detail.model_dump()
     }
 
 
-# ------------ Helper for test_student_code function --------------------- #
+# Helpers for test_student_code
 
 def initialize_submission_history(db: Session, user_id: int, exercise_id: int) -> SubmissionHistoryModel:
-    """Creates a pending submission entry and returns its ID."""
+    """
+    Create a pending submission entry in the database.
+
+    Uses flush() instead of commit() to generate the ID while keeping
+    the transaction open for potential rollback.
+    """
     submission = SubmissionHistoryModel(
         user_id=user_id,
         exercise_id=exercise_id,
-        status=SubmissionStatus.PENDING 
+        status=SubmissionStatus.PENDING
     )
     db.add(submission)
-    # Flush sends the SQL to generate the ID but keeps the transaction open
-    # Unlike commit which write data permanently, flush allows us to still use db.rollback
-    # if an error occurs later.
-    
-    db.flush() 
+    db.flush()
     return submission
 
-def update_student_progress(db: Session, user_id: int, exercise_id: int, is_success: bool):
-    """Updates or creates the progress entry for the student."""
-    
+
+def update_student_progress(db: Session, user_id: int, exercise_id: int, is_success: bool) -> None:
+    """
+    Update or create the student's progress for this exercise.
+
+    Increments attempt count and updates status to VALIDATED if all tests pass.
+    """
     progress = db.query(ExerciseProgressModel).filter_by(
-        user_id=user_id, 
+        user_id=user_id,
         exercise_id=exercise_id
     ).first()
 
     if not progress:
         progress = ExerciseProgressModel(
-            user_id=user_id, 
+            user_id=user_id,
             exercise_id=exercise_id,
-            status=ProgressStatus.IN_PROGRESS, 
+            status=ProgressStatus.IN_PROGRESS,
             attempts_count=0
         )
         db.add(progress)
-    
+
     progress.attempts_count += 1
     progress.last_activity = datetime.now()
 
     if is_success:
         progress.status = ProgressStatus.VALIDATED
 
-def process_and_save_markers(db: Session, submission_id: int, payload_files: List[File], teacher_files: List[ExerciseFileModel]) -> List[MarkerData]:
-    """Extracts student markers and saves them to the DB."""
-    all_markers: List[MarkerData] = []
+
+def process_and_save_markers(
+    db: Session,
+    submission_id: int,
+    payload_files: list[File],
+    teacher_files: list[ExerciseFileModel]
+) -> list[MarkerData]:
+    """
+    Extract student solutions from TODO markers and save to database.
+
+    Validates that all expected markers are present in the student's code.
+    """
+    all_markers: list[MarkerData] = []
 
     for student_file in payload_files:
-        # Find the teacher file equivalent of the student file
+        # Find the corresponding teacher file
         teacher_file = next((f for f in teacher_files if f.id == student_file.id), None)
 
-        # Excepted ids in this file, extract_student_solutions will check if the student don't delete a markers 
+        # Get expected marker IDs for validation
         expected_ids = [m.marker_id for m in teacher_file.markers]
 
         markers = extract_student_solutions(student_file.content, student_file.extension, expected_ids)
@@ -204,23 +234,31 @@ def process_and_save_markers(db: Session, submission_id: int, payload_files: Lis
             ))
     return all_markers
 
-def reconstruct_files_for_compilation(exercise_files: List[ExerciseFileModel], student_markers: List[MarkerData]) -> List[File]:
-    """Merges student markers into teacher templates."""
-    files_to_compile: List[File] = []
+
+def reconstruct_files_for_compilation(
+    exercise_files: list[ExerciseFileModel],
+    student_markers: list[MarkerData]
+) -> list[File]:
+    """
+    Merge student solutions into teacher templates for compilation.
+
+    Main and non-editable files keep their original content.
+    Editable files have student code injected into TODO sections.
+    """
+    files_to_compile: list[File] = []
 
     for tf in exercise_files:
         if tf.is_main or not tf.editable:
-            # Main and non editable files don't have markers (normally), keep original content.
+            # Main and non-editable files don't have markers
             final_content = tf.template_without_marker
         else:
-            # Inject student code into the template.
+            # Inject student code into the template
             final_content = inject_markers_into_template(
-                tf.template_without_marker, 
-                student_markers, 
+                tf.template_without_marker,
+                student_markers,
                 tf.extension
             )
-        
-        # Filling all fields of File for compilation isn't optimal, I know. Temporary solution (If I don't forget).
+
         files_to_compile.append(File(
             id=tf.id,
             name=tf.name,
@@ -230,34 +268,43 @@ def reconstruct_files_for_compilation(exercise_files: List[ExerciseFileModel], s
             editable=tf.editable,
             position=tf.position
         ))
-    
+
     return files_to_compile
 
-def grade_submisison(db: Session, submission_id: int, exec_results: List[dict], tests: List[TestCaseModel]) -> Tuple[bool, List[TestResult]]:
+
+def grade_submission(
+    db: Session,
+    submission_id: int,
+    exec_results: list[dict],
+    tests: list[TestCaseModel]
+) -> tuple[bool, list[TestResult]]:
     """
-    Compares execution results with expected outputs, saves results to DB, 
-    and returns global success status + list of users output for frontend.
+    Grade execution results by comparing with expected outputs.
+
+    Compares stdout with expected output for each test case,
+    saves results to database, and returns formatted results.
     """
-    test_responses_list : List[TestResult] = []
+    test_responses_list: list[TestResult] = []
     global_success = True
 
     for i, result in enumerate(exec_results):
         test_case = tests[i]
-        
+
         print("test result", result)
-        # Data cleaning and extraction
+
+        # Extract and clean output data
         student_output = (result["data"]["stdout"] or "").strip()
         expected_output = (test_case.expected_output or "").strip()
         error_log = result["data"]["stderr"]
         exit_code = result["data"]["exit_code"]
 
-        # Verdict Logic
+        # Determine if test passed: exit code 0 and output matches
         is_success = (exit_code == 0) and (student_output == expected_output)
-        
+
         if not is_success:
             global_success = False
 
-        # Save to DB
+        # Save result to database
         db.add(SubmissionResultModel(
             submission_id=submission_id,
             test_case_id=test_case.id,
@@ -266,93 +313,108 @@ def grade_submisison(db: Session, submission_id: int, exec_results: List[dict], 
             error_log=error_log
         ))
 
-        # Prepare Frontend Response
+        # Build response for frontend
         test_responses_list.append(TestResult(
             id=test_case.id,
             status=TestStatus.SUCCESS if is_success else TestStatus.FAILURE,
             actual_output=student_output,
             error_log=error_log
         ))
-    
+
     return global_success, test_responses_list
 
-async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmissionPayload):
-    """
-    Pipeline for testing student code.
-    Steps: Security(Exercise exist and exercise not private) -> Init submission_history -> Parse/Save student solution 
-    -> Reconstruct files -> Compile/Run -> Grade/Saving the answer of the student.
-    """
+# Main Student Submission Handler
 
-    # Security (Outside try/except because it return a HTTPExceptions for error)
+async def test_student_code(db: Session, exercise_id: int, payload: StudentSubmissionPayload) -> dict:
+    """
+    Process and grade a student's code submission.
+
+    Pipeline:
+    1. Security check (exercise exists, not private)
+    2. Initialize submission record
+    3. Parse and save student solutions from TODO markers
+    4. Reconstruct complete files by merging with teacher templates
+    5. Compile code
+    6. Execute against all test cases
+    7. Grade results by comparing outputs
+    8. Update student progress
+
+    """
+    # Security check 
     exercise = get_secure_exercise_or_404(db, exercise_id)
 
-    try: 
-        #Initialization 
+    try:
+        # Initialize submission record
         submission = initialize_submission_history(db, payload.user_id, exercise_id)
         submission_id = submission.id
 
-        # Parsing and save the student solution
-        all_student_markers: List[MarkerData] = process_and_save_markers(db, submission_id, payload.files, exercise.files)
+        #  Parse student solutions and save to database
+        all_student_markers: list[MarkerData] = process_and_save_markers(
+            db, submission_id, payload.files, exercise.files
+        )
 
-        # Reconstruction files (student markers + teacher template)
-        # We use exercise.files directly (loaded via selectinload)
-        print("Student  Markers ", all_student_markers)
-        teacher_files : List[ExerciseFileModel] = exercise.files
-        files_to_compile : List[File] = reconstruct_files_for_compilation(teacher_files, all_student_markers)
-        
-        # Compilation 
-        print("File rebuilt ", files_to_compile)
-        # sort the tests to ensure the test are in the right order
-        sorted_tests : List[TestCaseModel] = sorted(exercise.tests, key=lambda t: t.position)
-        argvs : List[str] = [t.argv if t.argv else "" for t in sorted_tests]
+        #  Reconstruct files by merging student code with teacher templates
+        print("Student Markers", all_student_markers)
+        teacher_files: list[ExerciseFileModel] = exercise.files
+        files_to_compile: list[File] = reconstruct_files_for_compilation(
+            teacher_files, all_student_markers
+        )
 
-        # Compile and execute all the test
+        # Prepare test cases
+        print("Files rebuilt", files_to_compile)
+        sorted_tests: list[TestCaseModel] = sorted(exercise.tests, key=lambda t: t.position)
+        argvs: list[str] = [t.argv if t.argv else "" for t in sorted_tests]
+
+        #  Compile and execute all tests
         exec_results = await compile_and_run_logics(
-                    files_to_compile, 
-                    payload.language, 
-                    argvs
-                )
+            files_to_compile,
+            payload.language,
+            argvs
+        )
 
         # Check for compilation failure
-        # compile_and_run_logics return a dictionnary if the compilation didn't work {status, message, data}
+        # compile_and_run_logics returns a dict if compilation failed
         if isinstance(exec_results, dict) and not exec_results.get("status", True):
-             submission.status = SubmissionStatus.FAILURE
-             db.commit()    
-             print("Error compile", exec_results)
-             return exec_results # returns the error dict directly
-        
-        print("Result ", exec_results)
+            submission.status = SubmissionStatus.FAILURE
+            db.commit()
+            print("Compilation error", exec_results)
+            return exec_results
 
-        # Grading 
-        global_success, test_responses_list = grade_submisison(db, submission_id, exec_results, sorted_tests)
-        
-        # Ubdate the status of the submission
+        print("Execution results", exec_results)
+
+        #Grade results
+        global_success, test_responses_list = grade_submission(
+            db, submission_id, exec_results, sorted_tests
+        )
+
+        # Update submission status
         submission.status = SubmissionStatus.SUCCESS if global_success else SubmissionStatus.FAILURE
 
-        # Update the progression for this exercice, if it don't exist, create it 
+        # Update student progress
         update_student_progress(db, payload.user_id, exercise_id, global_success)
 
-        # Final commit
+        # Commit all changes
         db.commit()
 
         return {
             "status": True,
-            "message": "Correction terminée",
+            "message": "Grading completed",
             "data": {
-                "test_responses" : test_responses_list}
-             
+                "test_responses": test_responses_list
+            }
         }
-    
+
     except ValueError as e:
-            return {
-                "status": False,
-                "message": "Erreur de format",
-                "data": { "format_error": str(e) }
-            }     
+        return {
+            "status": False,
+            "message": "Format error",
+            "data": {"format_error": str(e)}
+        }
+
     except Exception as e:
         db.rollback()
-        print(f"error in test_student_code function : {e}") 
+        print(f"Error in test_student_code: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Erreur interne lors de la correction : {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal grading error: {str(e)}"
         )

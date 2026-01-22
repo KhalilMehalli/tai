@@ -1,4 +1,10 @@
-import re
+"""
+Exercise creation and update service.
+
+This module handles creating, retrieving, and updating exercises
+including parsing marker-based code files.
+"""
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -7,19 +13,27 @@ from app.schemas.schemas import (
     ExerciseFullCreate, FileCreate, TestCaseCreate, HintCreate,
     Exercise, Test, Hint
 )
-from app.db.models import ExerciseModel, ExerciseFileModel, ExerciseMarkerModel, TestCaseModel, HintModel, CourseModel
-
+from app.db.models import (
+    ExerciseModel, ExerciseFileModel, ExerciseMarkerModel,
+    TestCaseModel, HintModel, CourseModel
+)
 from app.utils.parsing import extract_teacher_markers_from_code, reconstruct_file_with_markers
 
+
 def prepare_files_and_markers(files_data: list[FileCreate]) -> list[ExerciseFileModel]:
-    """Prepare the sqlAlchemy object ExerciseFileModel and ExerciseMarkerModel without saving them"""
+    """
+    Parse files and extract markers to create ExerciseFileModel objects.
+
+    Extracts <complete> markers from teacher code, stores the template
+    (with TODO placeholders) and marker solutions separately.
+
+    """
     exercise_files = []
     for file_data in files_data:
         try:
             parsed_result = extract_teacher_markers_from_code(file_data.content, file_data.extension)
         except ValueError as e:
-            # Call our "extract_teacher_markers_from_code" which will separate the content of the markers from the file
-            raise ValueError(f"Erreur de syntaxe dans le fichier '{file_data.name}': {str(e)}")
+            raise ValueError(f"Syntax error in file '{file_data.name}': {str(e)}")
 
         new_file = ExerciseFileModel(
             name=file_data.name,
@@ -37,96 +51,100 @@ def prepare_files_and_markers(files_data: list[FileCreate]) -> list[ExerciseFile
         exercise_files.append(new_file)
     return exercise_files
 
+
 def prepare_tests(tests_data: list[TestCaseCreate]) -> list[TestCaseModel]:
+    """Convert TestCaseCreate schemas to TestCaseModel objects."""
     return [TestCaseModel(**test.model_dump()) for test in tests_data]
 
+
 def prepare_hints(hints_data: list[HintCreate]) -> list[HintModel]:
+    """Convert HintCreate schemas to HintModel objects."""
     return [HintModel(**hint.model_dump()) for hint in hints_data]
 
 
-def create_exercise(exercise_data: ExerciseFullCreate, db: Session):
+def create_exercise(exercise_data: ExerciseFullCreate, db: Session) -> dict:
     """
-    Receive the complete data of an exercice when the teacher valid and exercice
+    Create a new exercise with files, tests, and hints. Called when a teacher validates a new exercise. 
     """
     try:
-        
-        # Check if the course exist before creating the new cexercise
+        # Verify the parent course exists
         course_exists = db.query(CourseModel).filter(CourseModel.id == exercise_data.course_id).first()
-        
+
         if not course_exists:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Le cours avec l'id {exercise_data.course_id} n'existe pas."
+                detail=f"Course with id {exercise_data.course_id} not found."
             )
 
-            
-        # Creation of the ExerciseModel Object
+        # Create the ExerciseModel object
         exercise_info = exercise_data.model_dump(exclude={"files", "tests", "hints"})
         new_exercise = ExerciseModel(**exercise_info)
 
-        # Prepare and attach the children ExerciseFIleMOdel, TestCaseModel and HintModel to the ExerciseModel Object 
+        # Attach child objects (files, tests, hints)
         if exercise_data.files:
             new_exercise.files.extend(prepare_files_and_markers(exercise_data.files))
-        
+
         if exercise_data.tests:
             new_exercise.tests.extend(prepare_tests(exercise_data.tests))
 
         if exercise_data.hints:
             new_exercise.hints.extend(prepare_hints(exercise_data.hints))
 
-        # Communication with the db
+        # Save to database
         db.add(new_exercise)
-        db.commit() # COmmit the change
+        db.commit()
         db.refresh(new_exercise) # Get the id of the new exercise
 
         return {
             "status": True,
-            "message": f"L'exercice '{new_exercise.name}' a bien été créé.",
+            "message": f"Exercise '{new_exercise.name}' created successfully.",
             "data": {
                 "id": new_exercise.id
             }
         }
 
-    
     except ValueError as e:
-        #In case of an parsing error
+        # Parsing error (invalid marker syntax)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 
     except SQLAlchemyError as e:
-        # Error when communicating with the db
+        # Database error
         print(str(e))
         db.rollback() # clean the session, no need to do other thing because we didn't commit yet
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'enregistrement en base de données : {str(e)}"
+            detail=f"Database error: {str(e)}"
         )
 
     except Exception as e:
-        #Error I didn't take into account
+        # Unexpected error
         print(str(e))
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Une erreur inattendue est survenue : {str(e)}"
+            detail=f"Unexpected error: {str(e)}"
         )
 
 
 
 
 
-def get_exercise_for_update(exercise_id: int, db: Session):
+def get_exercise_for_update(exercise_id: int, db: Session) -> Exercise:
     """
-    Get full exercise with reconstructed files (with <complete> markers) for teacher editing
+    Get exercise with reconstructed files for teacher editing.
+
+    Reconstructs the original teacher code by merging templates with
+    stored marker solutions, adding back the <complete> markers.
     """
     exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_id).first()
 
     if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"L'exercice avec l'id {exercise_id} n'existe pas."
+            detail=f"Exercise with id {exercise_id} not found."
         )
 
     # Reconstruct files with <complete> markers
@@ -184,9 +202,12 @@ def get_exercise_for_update(exercise_id: int, db: Session):
     )
 
 
-def update_exercise(exercise_data: Exercise, db: Session):
+def update_exercise(exercise_data: Exercise, db: Session) -> dict:
     """
-    Full update of an exercise: replaces files, tests, and hints entirely
+    Full update of an exercise (replaces files, tests, hints).
+
+    Deletes all existing files, tests, and hints and replaces them
+    with the new data. Re-parses marker-annotated files.
     """
     try:
         exercise = db.query(ExerciseModel).filter(ExerciseModel.id == exercise_data.id).first()
@@ -194,7 +215,7 @@ def update_exercise(exercise_data: Exercise, db: Session):
         if not exercise:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"L'exercice avec l'id {exercise_data.id} n'existe pas."
+                detail=f"Exercise with id {exercise_data.id} not found."
             )
 
         # Update basic info
@@ -204,7 +225,7 @@ def update_exercise(exercise_data: Exercise, db: Session):
         exercise.visibility = exercise_data.visibility
         exercise.language = exercise_data.language
 
-        # Delete old files, tests, hints (cascade will handle children)
+        # Delete old files, tests, hints (cascade handles children)
         for file in exercise.files:
             db.delete(file)
         for test in exercise.tests:
@@ -212,7 +233,7 @@ def update_exercise(exercise_data: Exercise, db: Session):
         for hint in exercise.hints:
             db.delete(hint)
 
-        # Clear the lists
+        # Clear the relationship lists
         exercise.files.clear()
         exercise.tests.clear()
         exercise.hints.clear()
@@ -232,7 +253,7 @@ def update_exercise(exercise_data: Exercise, db: Session):
 
         return {
             "status": True,
-            "message": f"L'exercice '{exercise.name}' a bien ete mis a jour.",
+            "message": f"Exercise '{exercise.name}' updated successfully.",
             "data": {
                 "id": exercise.id
             }
@@ -249,7 +270,7 @@ def update_exercise(exercise_data: Exercise, db: Session):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la mise a jour en base de donnees : {str(e)}"
+            detail=f"Database update error: {str(e)}"
         )
 
     except Exception as e:
@@ -257,6 +278,6 @@ def update_exercise(exercise_data: Exercise, db: Session):
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Une erreur inattendue est survenue : {str(e)}"
+            detail=f"Unexpected error: {str(e)}"
         )
 

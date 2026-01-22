@@ -1,25 +1,30 @@
+"""
+Navigation service for retrieving unit/course/exercise structures.
+
+This module provides functions to fetch lightweight navigation data
+for the dashboard, unit views and side navigation panel in exerise-run.
+"""
+
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, selectinload, joinedload
-from typing import List
-from datetime import datetime
+from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import ExerciseModel, ExerciseFileModel, TestCaseModel, HintModel, CourseModel, UnitModel, SubmissionHistoryModel, SubmissionMarkerModel, SubmissionResultModel, ExerciseProgressModel
+from app.db.models import CourseModel, UnitModel
 from app.schemas.schemas import UnitSummary, UnitNav, CourseNav, ExerciseNav
-from app.core.enums import Visibility
 
 
+def get_all_units(user_id: int, db: Session) -> list[UnitSummary]:
+    """
+    Get a summary of all units for the dashboard.
 
-def get_all_units(user_id : int, db: Session):
-
-    # For now, return all the unit because I don't have assign unit to user
+    """
     units = db.query(UnitModel).order_by(UnitModel.id).all()
     if not units:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Modules introuvables (bizzare)"
+            detail="No units found"
         )
-    
-    summary_list : List[UnitSummary] = []
+
+    summary_list: list[UnitSummary] = []
 
     for unit in units:
         summary_list.append(UnitSummary(
@@ -29,16 +34,16 @@ def get_all_units(user_id : int, db: Session):
             visibility=unit.visibility,
             difficulty=unit.difficulty,
             author_id=unit.author_id
-            )
-        )
+        ))
     print(summary_list)
-            
-    return summary_list    
+
+    return summary_list
 
 
-def get_unit_structure(unit_id : int, user_id : int, db: Session ):
-    """Retrieve all the children (course, exercise) of an unit"""
-
+def get_unit_structure(unit_id: int, user_id: int, db: Session) -> UnitNav:
+    """
+    Retrieve the full structure of a unit with all courses and exercises.
+    """
     unit = (
         db.query(UnitModel)
         .options(selectinload(UnitModel.courses).selectinload(CourseModel.exercises))
@@ -49,24 +54,15 @@ def get_unit_structure(unit_id : int, user_id : int, db: Session ):
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Module introuvable"
+            detail="Unit not found"
         )
 
-    """
-    if unit.visibility == Visibility.PRIVATE:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Module privé"
-        )
-    """    
-
-    courses_nav_list : List[CourseNav] = []
+    courses_nav_list: list[CourseNav] = []
 
     for course in unit.courses:
-        exercises_nav_list : ExerciseNav = []
+        exercises_nav_list: list[ExerciseNav] = []
 
         for exercise in course.exercises:
-            
             exercises_nav_list.append(ExerciseNav(
                 id=exercise.id,
                 name=exercise.name,
@@ -83,18 +79,17 @@ def get_unit_structure(unit_id : int, user_id : int, db: Session ):
             description=course.description,
             position=course.position,
             visibility=course.visibility,
-            difficulty=course.difficulty, 
+            difficulty=course.difficulty,
             author_id=unit.author_id,
-            exercises=exercises_nav_list 
+            exercises=exercises_nav_list
         ))
-
 
     return UnitNav(
         id=unit.id,
         name=unit.name,
         description=unit.description,
         visibility=unit.visibility,
-        difficulty=unit.difficulty, 
+        difficulty=unit.difficulty,
         author_id=unit.author_id,
         courses=courses_nav_list
     )

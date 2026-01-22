@@ -2,6 +2,7 @@ import re
 from typing import List
 from dataclasses import dataclass
 
+from app.utils.syntax_code import COMMENT_SYMBOLS
 # dataclass allow us to create a class quickly without writting the __init__, etc..
 @dataclass
 class MarkerData:
@@ -14,10 +15,6 @@ class ParsedResult:
     # The content inside the markers and the markers has been remplace by TODOs
     markers: List[MarkerData]
 
-
-COMMENT_SYMBOLS = {
-    "c":  r"//", "h" : r"//", "java" : r"//", "py" : "#"
-}
 
 
 def get_line_indentation(full_content: str, target_index: int) -> str:
